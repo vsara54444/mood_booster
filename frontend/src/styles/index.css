@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+    background-image: radial-gradient(circle at 1px 1px, rgba(43, 36, 56, 0.035) 1px, transparent 0);
+    background-size: 18px 18px;
+  }
+  ::selection {
+    @apply bg-coral-light text-coral-dark;
+  }
+  :focus-visible {
+    outline: 2px solid #2D9B8F;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Signature element: a "torn notebook page" card with a folded dog-ear corner.
+     Used for the day's result, journal history entries, and community posts -
+     it's the one visual motif that ties the whole app back to "a daily journal,
+     gently making fun of your day." */
+  .journal-card {
+    @apply relative bg-white rounded-card shadow-card p-5;
+    border: 1px solid rgba(43, 36, 56, 0.06);
+  }
+  .journal-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, transparent 50%, #F7EEE3 50%);
+    border-bottom-left-radius: 4px;
+    box-shadow: -2px 2px 3px rgba(43, 36, 56, 0.08);
+  }
+
+  .btn-pop {
+    @apply font-display font-semibold text-white bg-coral rounded-full shadow-pop
+      transition-transform active:translate-y-1 active:shadow-none select-none;
+  }
+  .btn-pop-teal {
+    @apply font-display font-semibold text-white bg-teal rounded-full shadow-popTeal
+      transition-transform active:translate-y-1 active:shadow-none select-none;
+  }
+
+  .chip {
+    @apply px-3 py-1.5 rounded-full text-sm font-medium border transition-colors select-none;
+  }
+  .chip-inactive {
+    @apply chip bg-white border-lavender text-inkSoft;
+  }
+  .chip-active {
+    @apply chip bg-coral border-coral text-white;
+  }
+
+  .tab-icon-wrap {
+    @apply flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+}
