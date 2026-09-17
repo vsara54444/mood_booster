@@ -7,21 +7,21 @@ export default function Terms() {
   return (
     <div className="max-w-md mx-auto pb-16">
       <TopBar title="Terms of Service" subtitle="Last updated June 2026" right={<BackBtn onClick={() => navigate(-1)} />} />
-      <main className="px-5 pt-5 space-y-5 text-sm leading-relaxed text-ink">
-        <Section title="What ReLOL is">
-          ReLOL helps you turn small daily frustrations into a moment of humor, perspective, and
+      <main className="px-5 pt-6 space-y-6 text-sm leading-relaxed text-ink">
+        <Section title="What MoodBooster is">
+          MoodBooster helps you turn small daily frustrations into a moment of humor, perspective, and
           one practical action. It's a lighthearted journaling tool, not a substitute for medical,
           psychological, or professional advice.
         </Section>
 
         <Section title="Not a crisis service">
-          ReLOL is not designed for situations involving self-harm, abuse, or mental health
+          MoodBooster is not designed for situations involving self-harm, abuse, or mental health
           crises. If you're in crisis, please contact a local emergency service or a crisis
           helpline in your area.
         </Section>
 
         <Section title="Acceptable use">
-          Don't use ReLOL to submit content that targets a real, named private individual with
+          Don't use MoodBooster to submit content that targets a real, named private individual with
           harassment, hate speech, or threats. Community content should stay focused on everyday
           situations, not on identifying or attacking specific people.
         </Section>
@@ -34,7 +34,7 @@ export default function Terms() {
         </Section>
 
         <Section title="Your content">
-          You own what you write. By sharing an entry anonymously, you grant ReLOL a license to
+          You own what you write. By sharing an entry anonymously, you grant MoodBooster a license to
           display the anonymized version in the Relatable feed. You can stop using the app and
           delete your account and data at any time.
         </Section>
@@ -45,7 +45,7 @@ export default function Terms() {
         </Section>
 
         <Section title="No warranty">
-          ReLOL is provided "as is." We do our best to keep the app reliable and the AI output
+          MoodBooster is provided "as is." We do our best to keep the app reliable and the AI output
           appropriate, but we don't guarantee uninterrupted service or that every generated
           response will be perfect.
         </Section>
@@ -56,7 +56,7 @@ export default function Terms() {
         </Section>
 
         <Section title="Contact">
-          Questions can be sent to support@relol.app.
+          Questions can be sent to support@moodbooster.app.
         </Section>
       </main>
     </div>
@@ -66,7 +66,7 @@ export default function Terms() {
 function Section({ title, children }) {
   return (
     <div>
-      <h2 className="font-display font-semibold text-base mb-1">{title}</h2>
+      <h2 className="section-label mb-1">{title}</h2>
       <p className="text-inkSoft">{children}</p>
     </div>
   );
@@ -74,7 +74,7 @@ function Section({ title, children }) {
 
 function BackBtn({ onClick }) {
   return (
-    <button onClick={onClick} className="text-sm font-semibold text-teal-dark">
+    <button onClick={onClick} className="text-sm font-semibold text-slate-dark">
       Back
     </button>
   );

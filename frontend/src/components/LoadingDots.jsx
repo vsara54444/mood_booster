@@ -7,7 +7,7 @@ export default function LoadingDots({ label = 'Cooking up your reframe' }) {
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="w-2.5 h-2.5 rounded-full bg-coral animate-bounce"
+            className="w-2.5 h-2.5 rounded-full bg-blue animate-bounce"
             style={{ animationDelay: `${i * 0.12}s` }}
           />
         ))}

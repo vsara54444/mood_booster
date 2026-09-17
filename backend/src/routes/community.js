@@ -2,6 +2,7 @@ const express = require('express');
 const { getPool } = require('../config/db');
 const { requireAuth } = require('../middleware/auth');
 const { aiAnonymize } = require('../services/anonymizer');
+const { recordSignal } = require('../services/mechanismPreference');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -10,7 +11,7 @@ router.post('/share/:entryId', async (req, res) => {
   try {
     const pool = getPool();
     const entryResult = await pool.query(
-      `SELECT entry_id, category, cleaned_text, humor_text, perspective_text, is_shared_anonymously
+      `SELECT entry_id, category, cleaned_text, humor_text, perspective_text, is_shared_anonymously, humor_mechanism
        FROM entries WHERE entry_id = $1 AND user_id = $2`,
       [req.params.entryId, req.userId]
     );
@@ -20,10 +21,13 @@ router.post('/share/:entryId', async (req, res) => {
 
     const anonymizedText = await aiAnonymize(entry.cleaned_text);
 
+    // humor_mechanism is copied at share time (not joined later) so a future
+    // regenerate on the original entry can't retroactively relabel a joke
+    // that's already out on the feed collecting votes.
     await pool.query(
-      `INSERT INTO community_posts (entry_id, category, anonymized_text, humor_text, perspective_text)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [entry.entry_id, entry.category, anonymizedText, entry.humor_text, entry.perspective_text]
+      `INSERT INTO community_posts (entry_id, category, anonymized_text, humor_text, perspective_text, humor_mechanism)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [entry.entry_id, entry.category, anonymizedText, entry.humor_text, entry.perspective_text, entry.humor_mechanism]
     );
     await pool.query(
       'UPDATE entries SET is_shared_anonymously = true WHERE entry_id = $1',
@@ -80,6 +84,19 @@ router.post('/feed/:postId/vote', async (req, res) => {
       `UPDATE community_posts SET ${column} = ${column} + 1 WHERE post_id = $1`,
       [req.params.postId]
     );
+
+    // Voting is the voter's own reaction, not the original poster's - this
+    // feeds the VOTER's mechanism-preference profile.
+    const post = await pool.query('SELECT entry_id, humor_mechanism FROM community_posts WHERE post_id = $1', [req.params.postId]);
+    if (post.rows[0]?.humor_mechanism) {
+      await recordSignal(pool, {
+        userId: req.userId,
+        entryId: post.rows[0].entry_id,
+        mechanism: post.rows[0].humor_mechanism,
+        signal: `community_${voteType}`,
+      });
+    }
+
     res.json({ voted: true });
   } catch (err) {
     console.error('[community/vote]', err);

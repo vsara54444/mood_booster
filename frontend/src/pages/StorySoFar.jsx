@@ -5,12 +5,10 @@ import TopBar from '../components/TopBar.jsx';
 import LoadingDots from '../components/LoadingDots.jsx';
 
 const MOOD_LABELS = { 1: '😩', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
-const CATEGORY_LABELS = {
-  frustrated: 'Frustration',
-  angry: 'Anger',
-  upset: 'Upset',
-  tired: 'Tiredness',
-  funny: 'Funny moments',
+const PERSONALIZED_SUMMARY = {
+  happy: "You've mostly been in good spirits this week 😊",
+  neutral: "This week's been calm and even-keeled 😐",
+  stressed: 'This week leaned heavy — be gentle with yourself 😫',
 };
 
 export default function StorySoFar() {
@@ -19,22 +17,19 @@ export default function StorySoFar() {
   const [summary, setSummary] = useState(null);
   const [weekly, setWeekly] = useState(null);
   const [monthly, setMonthly] = useState(null);
-  const [history, setHistory] = useState([]);
   const [view, setView] = useState('weekly'); // 'weekly' | 'monthly'
 
   useEffect(() => {
     (async () => {
       try {
-        const [s, w, m, h] = await Promise.all([
+        const [s, w, m] = await Promise.all([
           api.getDashboardSummary(accessToken),
           api.getWeeklyReport(accessToken),
           api.getMonthlyReport(accessToken),
-          api.getHistory(accessToken),
         ]);
         setSummary(s);
         setWeekly(w);
         setMonthly(m);
-        setHistory(h.entries);
       } catch (err) {
         console.error(err);
       } finally {
@@ -52,14 +47,40 @@ export default function StorySoFar() {
     );
   }
 
-  const maxMood = 5;
   const report = view === 'weekly' ? weekly : monthly;
+
+  const weekEntries = weekly.entries || [];
+  const toKey = (d) => new Date(d).toISOString().slice(0, 10);
+  const entryByDate = new Map(weekEntries.map((e) => [toKey(e.entry_date), e]));
+  const today = new Date();
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (6 - i));
+    return d;
+  });
+
+  const buckets = weekEntries.reduce(
+    (acc, e) => {
+      if (e.mood >= 4) acc.happy += 1;
+      else if (e.mood === 3) acc.neutral += 1;
+      else acc.stressed += 1;
+      return acc;
+    },
+    { happy: 0, neutral: 0, stressed: 0 }
+  );
+  const totalMoods = weekEntries.length;
+  const pct = (n) => (totalMoods ? Math.round((n / totalMoods) * 100) : 0);
+  const dominantMood = totalMoods
+    ? Object.entries(buckets).sort((a, b) => b[1] - a[1])[0][0]
+    : null;
+  const personalizedSummary =
+    PERSONALIZED_SUMMARY[dominantMood] || 'Check in a few times this week to start your mood journey.';
 
   return (
     <div className="max-w-md mx-auto pb-28">
       <TopBar title="The Story So Far" subtitle="Your patterns, minus the judgment" />
 
-      <main className="px-5 pt-5 space-y-5">
+      <main className="px-5 pt-6 space-y-6">
         {/* Streak + quick stats */}
         <div className="grid grid-cols-2 gap-3">
           <div className="journal-card text-center">
@@ -74,60 +95,57 @@ export default function StorySoFar() {
           </div>
         </div>
 
-        {/* Mood trend */}
+        {/* Your Mood Journey */}
         <div className="journal-card">
-          <p className="font-display font-semibold mb-3">Mood, last 14 check-ins</p>
-          {summary.moodTrend.length === 0 ? (
-            <EmptyState text="No check-ins yet. Your trend line starts the day you do." />
-          ) : (
-            <div className="flex items-end gap-1.5 h-28">
-              {summary.moodTrend.map((d, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
-                  <div
-                    className="w-full rounded-t-md bg-teal-light border border-teal/40"
-                    style={{ height: `${(d.Mood / maxMood) * 100}%` }}
-                  />
-                  <span className="text-[10px]">{MOOD_LABELS[d.Mood]}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          <p className="section-label mb-3">Your Mood Journey</p>
 
-        {/* Top categories */}
-        <div className="journal-card">
-          <p className="font-display font-semibold mb-3">Most common frustration categories</p>
-          {summary.topCategories.length === 0 ? (
-            <EmptyState text="Categories will show up after a few check-ins." />
-          ) : (
-            <div className="space-y-2">
-              {summary.topCategories.map((c) => (
-                <div key={c.Category} className="flex items-center gap-3">
-                  <span className="text-xs w-28 text-inkSoft shrink-0">{CATEGORY_LABELS[c.Category] || c.Category}</span>
-                  <div className="flex-1 h-2.5 bg-paperDim rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-coral rounded-full"
-                      style={{ width: `${(c.Count / summary.topCategories[0].Count) * 100}%` }}
-                    />
-                  </div>
-                  <span className="font-mono text-xs">{c.Count}</span>
+          <div className="flex justify-between gap-1 mb-4">
+            {last7Days.map((d, i) => {
+              const entry = entryByDate.get(toKey(d));
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-lg">{entry ? MOOD_LABELS[entry.mood] : '·'}</span>
+                  <span className="text-[10px] text-inkSoft">
+                    {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </span>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+
+          {totalMoods === 0 ? (
+            <EmptyState text="No check-ins this week yet." />
+          ) : (
+            <div className="space-y-1.5 mb-3">
+              <div className="flex items-center justify-between text-sm">
+                <span>😊 Happy</span>
+                <span className="font-mono">{pct(buckets.happy)}%</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>😐 Neutral</span>
+                <span className="font-mono">{pct(buckets.neutral)}%</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>😫 Stressed</span>
+                <span className="font-mono">{pct(buckets.stressed)}%</span>
+              </div>
             </div>
           )}
+
+          <p className="text-sm text-center font-medium text-blue-dark">{personalizedSummary}</p>
         </div>
 
         {/* Weekly / Monthly toggle report */}
         <div className="journal-card">
           <div className="flex items-center justify-between mb-3">
-            <p className="font-display font-semibold">{view === 'weekly' ? 'Weekly summary' : 'Monthly growth report'}</p>
+            <p className="section-label">{view === 'weekly' ? 'Weekly summary' : 'Monthly growth report'}</p>
             <div className="flex gap-1 bg-paperDim rounded-full p-1">
               {['weekly', 'monthly'].map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
                   className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                    view === v ? 'bg-coral text-white' : 'text-inkSoft'
+                    view === v ? 'bg-blue text-white' : 'text-inkSoft'
                   }`}
                 >
                   {v === 'weekly' ? 'Week' : 'Month'}
@@ -155,31 +173,6 @@ export default function StorySoFar() {
               {report.moodDelta < 0 && `📉 Mood dipped ${Math.abs(report.moodDelta)} this month. Be gentle with yourself.`}
               {report.moodDelta === 0 && `➡️ Mood's been steady this month.`}
             </p>
-          )}
-        </div>
-
-        {/* Journal history */}
-        <div>
-          <p className="font-display font-semibold mb-3 px-1">Your journal pages</p>
-          {history.length === 0 ? (
-            <div className="journal-card">
-              <EmptyState text="Your first entry will show up here right after you ReLOL it." />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {history.map((e) => (
-                <div key={e.EntryId} className="journal-card">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-mono text-[11px] text-inkSoft">
-                      {new Date(e.CreatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </span>
-                    <span className="text-lg">{MOOD_LABELS[e.Mood]}</span>
-                  </div>
-                  <p className="text-sm text-ink mb-2">{e.CleanedText}</p>
-                  <p className="text-sm font-display font-semibold text-coral-dark">"{e.HumorText}"</p>
-                </div>
-              ))}
-            </div>
           )}
         </div>
       </main>

@@ -8,6 +8,9 @@ const entriesRoutes = require('./routes/entries');
 const communityRoutes = require('./routes/community');
 const dashboardRoutes = require('./routes/dashboard');
 const profileRoutes = require('./routes/profile');
+const interestsRoutes = require('./routes/interests');
+const puzzlesRoutes = require('./routes/puzzles');
+const songsRoutes = require('./routes/songs');
 
 const app = express();
 
@@ -15,12 +18,15 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json({ limit: '100kb' }));
 app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false }));
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'ReLOL API' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'MoodBooster API' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/entries', entriesRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/interests', interestsRoutes);
+app.use('/api/puzzles', puzzlesRoutes);
+app.use('/api/songs', songsRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Not found.' }));
 app.use((err, req, res, next) => {
@@ -32,7 +38,7 @@ app.use((err, req, res, next) => {
 // Vercel: api/index.js exports the app - no listen needed.
 if (require.main === module) {
   const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => console.log(`[server] ReLOL API listening on port ${PORT}`));
+  app.listen(PORT, () => console.log(`[server] MoodBooster API listening on port ${PORT}`));
 }
 
 module.exports = app;

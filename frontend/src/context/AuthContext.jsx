@@ -1,13 +1,19 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { api } from '../api/client';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { api, setAuthHooks } from '../api/client';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [accessToken, setAccessToken] = useState(() => localStorage.getItem('relol_access_token'));
+  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem('relol_refresh_token'));
   const [userId, setUserId] = useState(() => localStorage.getItem('relol_user_id'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const refreshTokenRef = useRef(refreshToken);
+  useEffect(() => {
+    refreshTokenRef.current = refreshToken;
+  }, [refreshToken]);
 
   useEffect(() => {
     if (accessToken) localStorage.setItem('relol_access_token', accessToken);
@@ -15,9 +21,22 @@ export function AuthProvider({ children }) {
   }, [accessToken]);
 
   useEffect(() => {
+    if (refreshToken) localStorage.setItem('relol_refresh_token', refreshToken);
+    else localStorage.removeItem('relol_refresh_token');
+  }, [refreshToken]);
+
+  useEffect(() => {
     if (userId) localStorage.setItem('relol_user_id', userId);
     else localStorage.removeItem('relol_user_id');
   }, [userId]);
+
+  useEffect(() => {
+    setAuthHooks({
+      getRefreshToken: () => refreshTokenRef.current,
+      onRefreshed: (newAccessToken) => setAccessToken(newAccessToken),
+      onRefreshFailed: () => logout(),
+    });
+  }, []);
 
   async function signup(payload) {
     setLoading(true);
@@ -25,6 +44,7 @@ export function AuthProvider({ children }) {
     try {
       const data = await api.signup(payload);
       setAccessToken(data.accessToken);
+      setRefreshToken(data.refreshToken);
       setUserId(data.userId);
       return data;
     } catch (err) {
@@ -41,6 +61,7 @@ export function AuthProvider({ children }) {
     try {
       const data = await api.login(payload);
       setAccessToken(data.accessToken);
+      setRefreshToken(data.refreshToken);
       setUserId(data.userId);
       return data;
     } catch (err) {
@@ -53,6 +74,7 @@ export function AuthProvider({ children }) {
 
   function logout() {
     setAccessToken(null);
+    setRefreshToken(null);
     setUserId(null);
   }
 

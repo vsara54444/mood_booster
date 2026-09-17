@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getPool } = require('../config/db');
+const { nameFromEmail } = require('../utils/nameFromEmail');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ function signRefreshToken(userId) {
 
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, displayName, userType } = req.body;
+    const { email, password, displayName, userType, motherTongue } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
 
@@ -24,9 +25,9 @@ router.post('/signup', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 12);
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, display_name, user_type)
-       VALUES ($1, $2, $3, $4) RETURNING user_id`,
-      [email, passwordHash, displayName || null, userType || null]
+      `INSERT INTO users (email, password_hash, display_name, user_type, mother_tongue)
+       VALUES ($1, $2, $3, $4, $5) RETURNING user_id`,
+      [email, passwordHash, displayName || nameFromEmail(email), userType || null, motherTongue === 'tamil' ? 'tamil' : 'other']
     );
     const userId = result.rows[0].user_id;
 

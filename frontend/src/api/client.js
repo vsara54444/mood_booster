@@ -1,6 +1,31 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
-async function request(path, { method = 'GET', body, token, isJson = true } = {}) {
+// AuthContext registers these so this module can silently refresh an
+// expired access token without every page having to handle 401s itself.
+let authHooks = {
+  getRefreshToken: () => null,
+  onRefreshed: () => {},
+  onRefreshFailed: () => {},
+};
+export function setAuthHooks(hooks) {
+  authHooks = hooks;
+}
+
+let refreshPromise = null;
+async function refreshAccessToken() {
+  const refreshToken = authHooks.getRefreshToken();
+  if (!refreshToken) return null;
+  if (!refreshPromise) {
+    refreshPromise = rawRequest('/auth/refresh', { method: 'POST', body: { refreshToken } })
+      .then((r) => (r.ok ? r.data.accessToken : null))
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+async function rawRequest(path, { method = 'GET', body, token, isJson = true } = {}) {
   const headers = {};
   if (isJson) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -12,8 +37,24 @@ async function request(path, { method = 'GET', body, token, isJson = true } = {}
   });
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.error || `Request failed (${res.status})`);
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function request(path, opts = {}) {
+  let { ok, status, data } = await rawRequest(path, opts);
+
+  if (!ok && status === 401 && opts.token) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      authHooks.onRefreshed(newToken);
+      ({ ok, status, data } = await rawRequest(path, { ...opts, token: newToken }));
+    } else {
+      authHooks.onRefreshFailed();
+    }
+  }
+
+  if (!ok) {
+    throw new Error(data.error || `Request failed (${status})`);
   }
   return data;
 }
@@ -25,11 +66,10 @@ export const api = {
   getTodayEntry: (token) => request('/entries/today', { token }),
   submitEntry: (token, payload) => request('/entries', { method: 'POST', body: payload, token }),
   getHistory: (token, page = 1) => request(`/entries/history?page=${page}`, { token }),
-
-  getFeed: (token, page = 1) => request(`/community/feed?page=${page}`, { token }),
-  shareEntry: (token, entryId) => request(`/community/share/${entryId}`, { method: 'POST', token }),
-  voteOnPost: (token, postId, voteType) =>
-    request(`/community/feed/${postId}/vote`, { method: 'POST', body: { voteType }, token }),
+  generateSticker: (token, entryId, regenerate = false) =>
+    request(`/entries/${entryId}/sticker`, { method: 'POST', body: { regenerate }, token }),
+  regenerateHumor: (token, entryId) =>
+    request(`/entries/${entryId}/regenerate-humor`, { method: 'POST', token }),
 
   getDashboardSummary: (token) => request('/dashboard/summary', { token }),
   getWeeklyReport: (token) => request('/dashboard/weekly', { token }),
@@ -38,4 +78,16 @@ export const api = {
   getProfile: (token) => request('/profile', { token }),
   updateProfile: (token, payload) => request('/profile', { method: 'PATCH', body: payload, token }),
   deleteAccount: (token) => request('/profile', { method: 'DELETE', token }),
+
+  getInterests: (token) => request('/interests/me', { token }),
+  saveInterestCategory: (token, categoryKey, items) =>
+    request(`/interests/me/${categoryKey}`, { method: 'PUT', body: { items }, token }),
+
+  getRandomPuzzle: (token, category, excludeId) =>
+    request(`/puzzles/random?category=${category}${excludeId ? `&exclude=${excludeId}` : ''}`, { token }),
+  getPuzzleAnswer: (token, id) => request(`/puzzles/${id}`, { token }),
+
+  getRandomSong: (token, excludeId) =>
+    request(`/songs/random${excludeId ? `?exclude=${excludeId}` : ''}`, { token }),
+  getSongAnswer: (token, id) => request(`/songs/${id}`, { token }),
 };

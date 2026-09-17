@@ -5,7 +5,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "echo ok"
+    "build": "echo ok",
+    "generate-jokes": "node src/scripts/generateJokeTemplates.js",
+    "seed-humor-library": "node src/scripts/seedHumorLibrary.js",
+    "seed-puzzles": "node src/scripts/seedPuzzles.js",
+    "seed-songs": "node src/scripts/seedSongs.js"
   },
   "engines": { "node": ">=18.0.0" },
   "dependencies": {

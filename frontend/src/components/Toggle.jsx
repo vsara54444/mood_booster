@@ -12,7 +12,7 @@ export default function Toggle({ checked, onChange, label, description }) {
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`shrink-0 w-12 h-7 rounded-full transition-colors relative ${checked ? 'bg-teal' : 'bg-lavender'}`}
+        className={`shrink-0 w-12 h-7 rounded-full transition-colors relative ${checked ? 'bg-blue' : 'bg-lavender'}`}
       >
         <span
           className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${

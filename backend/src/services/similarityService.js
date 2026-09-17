@@ -16,10 +16,12 @@ const STOPWORDS = new Set([
   'has', 'have', 'just', 'into', 'that', 'this', 'you', 'i',
 ]);
 
+// Keeps a-z/0-9 plus the Tamil Unicode block (U+0B80-U+0BFF) so Tamil-script
+// jokes still tokenize instead of normalizing to nothing.
 function normalize(text) {
   const tokens = text
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/[^a-z0-9஀-௿\s]/g, ' ')
     .split(/\s+/)
     .filter((t) => t && !STOPWORDS.has(t));
   return [...new Set(tokens)].sort();
@@ -48,8 +50,8 @@ function jaccardSimilarity(tokensA, tokensB) {
 function scoreAgainstHistory(candidateText, history) {
   const candidateTokens = normalize(candidateText);
   let scored = history.map((row) => ({
-    text: row.JokeText,
-    score: jaccardSimilarity(candidateTokens, row.NormalizedTokens.split(' ')),
+    text: row.joke_text,
+    score: jaccardSimilarity(candidateTokens, row.normalized_tokens.split(' ')),
   }));
   scored.sort((a, b) => b.score - a.score);
   const maxSimilarity = scored.length ? scored[0].score : 0;

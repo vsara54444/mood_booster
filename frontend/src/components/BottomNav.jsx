@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 const TABS = [
   { to: '/', label: 'Home', icon: HomeIcon },
   { to: '/story', label: 'The Story So Far', short: 'Story', icon: StoryIcon },
-  { to: '/relatable', label: 'Relatable', icon: RelatableIcon },
+  { to: '/boost', label: 'Boost', icon: BoostIcon },
   { to: '/profile', label: 'Profile', icon: ProfileIcon },
 ];
 
@@ -18,7 +18,7 @@ export default function BottomNav() {
             to={to}
             end={to === '/'}
             className={({ isActive }) =>
-              `tab-icon-wrap py-2.5 ${isActive ? 'text-coral' : 'text-inkSoft'}`
+              `tab-icon-wrap py-2.5 ${isActive ? 'text-blue-dark' : 'text-inkSoft'}`
             }
           >
             {({ isActive }) => (
@@ -50,12 +50,10 @@ function StoryIcon({ active }) {
     </svg>
   );
 }
-function RelatableIcon({ active }) {
+function BoostIcon({ active }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 2}>
-      <circle cx="9" cy="9" r="3.4" />
-      <circle cx="17" cy="15" r="3.4" />
-      <path d="M11.5 10.8 14.5 13.2" strokeLinecap="round" />
+      <path d="M13 3 5 14h6l-1 7 9-12h-6l1-6Z" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

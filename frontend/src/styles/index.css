@@ -8,56 +8,46 @@
   }
   body {
     @apply bg-paper text-ink font-body antialiased;
-    background-image: radial-gradient(circle at 1px 1px, rgba(43, 36, 56, 0.035) 1px, transparent 0);
-    background-size: 18px 18px;
+  }
+  h1, h2, h3 {
+    @apply tracking-tight;
   }
   ::selection {
-    @apply bg-coral-light text-coral-dark;
+    @apply bg-blue-light text-blue-dark;
   }
   :focus-visible {
-    outline: 2px solid #2D9B8F;
+    outline: 2px solid #1D4ED8;
     outline-offset: 2px;
   }
 }
 
 @layer components {
-  /* Signature element: a "torn notebook page" card with a folded dog-ear corner.
-     Used for the day's result, journal history entries, and community posts -
-     it's the one visual motif that ties the whole app back to "a daily journal,
-     gently making fun of your day." */
+  /* Standard elevated card used for every content section app-wide. */
   .journal-card {
-    @apply relative bg-white rounded-card shadow-card p-5;
-    border: 1px solid rgba(43, 36, 56, 0.06);
-  }
-  .journal-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 22px;
-    height: 22px;
-    background: linear-gradient(135deg, transparent 50%, #F7EEE3 50%);
-    border-bottom-left-radius: 4px;
-    box-shadow: -2px 2px 3px rgba(43, 36, 56, 0.08);
+    @apply relative bg-white rounded-card shadow-card p-6;
+    border: 1px solid rgba(15, 23, 42, 0.06);
   }
 
+  /* Single primary-action button style, used app-wide. */
   .btn-pop {
-    @apply font-display font-semibold text-white bg-coral rounded-full shadow-pop
-      transition-transform active:translate-y-1 active:shadow-none select-none;
-  }
-  .btn-pop-teal {
-    @apply font-display font-semibold text-white bg-teal rounded-full shadow-popTeal
-      transition-transform active:translate-y-1 active:shadow-none select-none;
+    @apply font-display font-semibold text-white bg-blue rounded-xl shadow-pop
+      transition-all duration-150 active:scale-[0.98] active:shadow-none select-none;
   }
 
   .chip {
-    @apply px-3 py-1.5 rounded-full text-sm font-medium border transition-colors select-none;
+    @apply px-3.5 py-1.5 rounded-lg text-sm font-medium border transition-colors select-none;
   }
   .chip-inactive {
     @apply chip bg-white border-lavender text-inkSoft;
   }
   .chip-active {
-    @apply chip bg-coral border-coral text-white;
+    @apply chip bg-blue border-blue text-white;
+  }
+
+  /* Section header used above every card section - always the same
+     dark green, bold, non-italic style so headers read consistently app-wide. */
+  .section-label {
+    @apply font-display font-bold text-base tracking-wide text-green-800;
   }
 
   .tab-icon-wrap {

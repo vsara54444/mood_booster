@@ -1,64 +1,78 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-export default function ResultCard({ result, onShare, sharing, shared }) {
-  const [shareOptIn, setShareOptIn] = useState(false);
-
+export default function ResultCard({
+  result,
+  stickerImage,
+  stickerLoading,
+  onGenerateSticker,
+  onRegenerateSticker,
+  humorLoading,
+  onRegenerateHumor,
+}) {
   return (
     <div className="journal-card animate-popIn space-y-4">
       <div>
-        <span className="font-mono text-[11px] uppercase tracking-wide text-coral-dark font-bold">
+        <span className="section-label">
           Humor reframe
         </span>
         <p className="font-display text-xl font-semibold text-ink mt-1 leading-snug">
           {result.humor}
         </p>
+        {onRegenerateHumor && (
+          <button
+            type="button"
+            onClick={onRegenerateHumor}
+            disabled={humorLoading}
+            className="mt-2 text-xs font-semibold text-blue-dark disabled:opacity-60"
+          >
+            {humorLoading ? 'Cooking up a new one…' : 'Not feeling it? Try a different joke'}
+          </button>
+        )}
+
+        <div className="mt-3">
+          {stickerImage ? (
+            <div className="space-y-2">
+              <img
+                src={stickerImage}
+                alt="Mood meme"
+                className="w-full max-w-[240px] h-auto rounded-2xl border border-lavender"
+              />
+              <button
+                type="button"
+                onClick={onRegenerateSticker}
+                disabled={stickerLoading}
+                className="block text-xs font-semibold text-slate-dark disabled:opacity-60"
+              >
+                {stickerLoading ? 'Cooking up a sticker…' : 'Try another'}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onGenerateSticker}
+              disabled={stickerLoading}
+              className="text-xs font-semibold text-blue-dark disabled:opacity-60"
+            >
+              {stickerLoading ? 'Cooking up a sticker…' : 'Generate a sticker'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="h-px bg-lavender-light" />
 
       <div>
-        <span className="font-mono text-[11px] uppercase tracking-wide text-teal-dark font-bold">
+        <span className="section-label">
           Perspective
         </span>
         <p className="text-sm text-ink mt-1 leading-relaxed">{result.perspective}</p>
       </div>
 
       <div>
-        <span className="font-mono text-[11px] uppercase tracking-wide text-inkSoft font-bold">
+        <span className="section-label">
           Try this
         </span>
         <p className="text-sm text-ink mt-1 leading-relaxed">{result.action}</p>
-      </div>
-
-      <div className="pt-2 border-t border-lavender-light">
-        {shared ? (
-          <p className="text-xs text-teal-dark font-medium flex items-center gap-1.5">
-            <span>✓</span> Shared anonymously to Relatable - thank you!
-          </p>
-        ) : (
-          <div className="flex items-center justify-between gap-3">
-            <label className="flex items-center gap-2 text-xs text-inkSoft">
-              <input
-                type="checkbox"
-                checked={shareOptIn}
-                onChange={(e) => setShareOptIn(e.target.checked)}
-                className="w-4 h-4 accent-teal"
-              />
-              Share anonymously to Relatable
-            </label>
-            <button
-              type="button"
-              disabled={!shareOptIn || sharing}
-              onClick={onShare}
-              className="text-xs font-semibold text-white bg-teal disabled:bg-lavender disabled:text-inkSoft rounded-full px-3 py-1.5 transition-colors"
-            >
-              {sharing ? 'Sharing…' : 'Share'}
-            </button>
-          </div>
-        )}
-        <p className="text-[11px] text-inkSoft mt-2">
-          Names and companies are stripped automatically before anything is shared. Private by default.
-        </p>
       </div>
     </div>
   );

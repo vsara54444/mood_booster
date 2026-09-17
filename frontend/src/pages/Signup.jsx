@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-
-const USER_TYPES = [
-  { value: 'professional', label: 'Working professional' },
-  { value: 'parent', label: 'Parent' },
-  { value: 'student', label: 'Student' },
-  { value: 'other', label: 'Just here for the laughs' },
-];
+import { USER_TYPES, MOTHER_TONGUES } from '../constants/userOptions.js';
 
 export default function Signup() {
   const { signup, loading, error } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', displayName: '', userType: 'professional' });
+  const [form, setForm] = useState({ email: '', password: '', displayName: '', userType: 'professional', motherTongue: 'other' });
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -31,8 +25,10 @@ export default function Signup() {
   return (
     <div className="min-h-screen flex flex-col justify-center px-6 py-10 max-w-md mx-auto">
       <div className="text-center mb-8">
-        <p className="text-5xl mb-2">🎉</p>
-        <h1 className="font-display text-3xl font-semibold">Join ReLOL</h1>
+        <div className="w-12 h-12 rounded-xl bg-blue text-white font-display font-bold text-xl flex items-center justify-center mx-auto mb-4">
+          M
+        </div>
+        <h1 className="font-display text-3xl font-semibold">Join MoodBooster</h1>
         <p className="text-sm text-inkSoft mt-1">Turn today's chaos into tomorrow's punchline.</p>
       </div>
 
@@ -42,7 +38,7 @@ export default function Signup() {
           <input
             value={form.displayName}
             onChange={(e) => update('displayName', e.target.value)}
-            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-teal outline-none"
+            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-slate outline-none"
             placeholder="What should we call you?"
           />
         </div>
@@ -53,7 +49,7 @@ export default function Signup() {
             required
             value={form.email}
             onChange={(e) => update('email', e.target.value)}
-            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-teal outline-none"
+            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-slate outline-none"
             placeholder="you@example.com"
           />
         </div>
@@ -65,7 +61,7 @@ export default function Signup() {
             minLength={8}
             value={form.password}
             onChange={(e) => update('password', e.target.value)}
-            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-teal outline-none"
+            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-slate outline-none"
             placeholder="At least 8 characters"
           />
         </div>
@@ -84,8 +80,23 @@ export default function Signup() {
             ))}
           </div>
         </div>
+        <div>
+          <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Mother tongue</label>
+          <select
+            value={form.motherTongue}
+            onChange={(e) => update('motherTongue', e.target.value)}
+            className="mt-2 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm font-medium focus:border-slate outline-none"
+          >
+            {MOTHER_TONGUES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <p className="text-[11px] text-inkSoft mt-1">
+            Pick language to get your humor reframe.
+          </p>
+        </div>
 
-        {error && <p className="text-sm text-coral-dark font-medium">{error}</p>}
+        {error && <p className="text-sm text-danger-dark font-medium">{error}</p>}
 
         <button type="submit" disabled={loading} className="btn-pop w-full py-3.5 mt-2">
           {loading ? 'Creating account…' : 'Create account'}
@@ -100,7 +111,7 @@ export default function Signup() {
 
       <p className="text-center text-sm text-inkSoft mt-6">
         Already have an account?{' '}
-        <Link to="/login" className="text-coral-dark font-semibold">
+        <Link to="/login" className="text-blue-dark font-semibold">
           Log in
         </Link>
       </p>

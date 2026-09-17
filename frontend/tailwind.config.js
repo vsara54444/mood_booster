@@ -4,41 +4,62 @@ export default {
   theme: {
     extend: {
       colors: {
-        paper: '#FFF8F2',
-        paperDim: '#F7EEE3',
-        ink: '#2B2438',
-        inkSoft: '#5B5468',
-        coral: {
-          DEFAULT: '#FF6B4A',
-          dark: '#E2502F',
-          light: '#FFE3DA',
+        paper: '#F8FAFC',
+        paperDim: '#EEF2F7',
+        ink: '#0F172A',
+        inkSoft: '#64748B',
+        blue: {
+          DEFAULT: '#2563EB',
+          dark: '#1D4ED8',
+          light: '#DBEAFE',
         },
-        teal: {
-          DEFAULT: '#2D9B8F',
-          dark: '#1F6F66',
-          light: '#DCF2EF',
+        slate: {
+          DEFAULT: '#475569',
+          dark: '#334155',
+          light: '#E2E8F0',
+        },
+        danger: {
+          DEFAULT: '#DC2626',
+          dark: '#B91C1C',
+          light: '#FEE2E2',
         },
         butter: {
-          DEFAULT: '#FFC857',
-          light: '#FFF1D2',
+          DEFAULT: '#D97706',
+          light: '#FEF3C7',
         },
         lavender: {
-          DEFAULT: '#C9C2D9',
-          light: '#EFEBF6',
+          DEFAULT: '#E2E8F0',
+          light: '#F1F5F9',
         },
       },
       fontFamily: {
-        display: ['Fraunces', 'serif'],
-        body: ['Inter', 'sans-serif'],
+        display: [
+          'Inter',
+          '"Noto Sans Tamil"',
+          '"Noto Sans Telugu"',
+          '"Noto Sans Kannada"',
+          '"Noto Sans Malayalam"',
+          '"Noto Sans Devanagari"',
+          'sans-serif',
+        ],
+        body: [
+          'Inter',
+          '"Noto Sans Tamil"',
+          '"Noto Sans Telugu"',
+          '"Noto Sans Kannada"',
+          '"Noto Sans Malayalam"',
+          '"Noto Sans Devanagari"',
+          'sans-serif',
+        ],
         mono: ['"Space Mono"', 'monospace'],
       },
       borderRadius: {
-        card: '20px',
+        card: '14px',
       },
       boxShadow: {
-        card: '0 2px 0 rgba(43, 36, 56, 0.06), 0 12px 24px -16px rgba(43, 36, 56, 0.25)',
-        pop: '0 4px 0 #E2502F',
-        popTeal: '0 4px 0 #1F6F66',
+        card: '0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 24px -16px rgba(15, 23, 42, 0.25)',
+        pop: '0 4px 10px -2px rgba(15, 23, 42, 0.2)',
+        popTeal: '0 4px 10px -2px rgba(15, 23, 42, 0.2)',
       },
       keyframes: {
         popIn: {
@@ -53,11 +74,16 @@ export default {
           '0%, 100%': { transform: 'rotate(-1deg)' },
           '50%': { transform: 'rotate(1deg)' },
         },
+        breathe: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.35)' },
+        },
       },
       animation: {
         popIn: 'popIn 0.25s ease-out',
         bounceTap: 'bounceTap 0.15s ease-in-out',
         wiggle: 'wiggle 4s ease-in-out infinite',
+        breathe: 'breathe 4s ease-in-out infinite',
       },
     },
   },

@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
   try {
     const pool = getPool();
     const result = await pool.query(
-      `SELECT user_id, email, display_name, user_type, reminder_time,
+      `SELECT user_id, email, display_name, user_type, mother_tongue, reminder_time,
               notifications_on, share_default, created_at
        FROM users WHERE user_id = $1 AND is_deleted = false`,
       [req.userId]
@@ -25,17 +25,18 @@ router.get('/', async (req, res) => {
 
 router.patch('/', async (req, res) => {
   try {
-    const { displayName, userType, reminderTime, notificationsOn, shareDefault } = req.body;
+    const { displayName, userType, motherTongue, reminderTime, notificationsOn, shareDefault } = req.body;
     const pool = getPool();
     await pool.query(
       `UPDATE users SET
          display_name      = COALESCE($2, display_name),
          user_type         = COALESCE($3, user_type),
-         reminder_time     = COALESCE($4::TIME, reminder_time),
-         notifications_on  = $5,
-         share_default     = $6
+         mother_tongue     = COALESCE($4, mother_tongue),
+         reminder_time     = COALESCE($5::TIME, reminder_time),
+         notifications_on  = $6,
+         share_default     = $7
        WHERE user_id = $1`,
-      [req.userId, displayName ?? null, userType ?? null, reminderTime ?? null,
+      [req.userId, displayName ?? null, userType ?? null, motherTongue ?? null, reminderTime ?? null,
        notificationsOn ?? true, shareDefault ?? false]
     );
     res.json({ updated: true });

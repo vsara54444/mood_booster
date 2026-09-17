@@ -21,7 +21,9 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col justify-center px-6 py-10 max-w-md mx-auto">
       <div className="text-center mb-8">
-        <p className="text-5xl mb-2">😅</p>
+        <div className="w-12 h-12 rounded-xl bg-blue text-white font-display font-bold text-xl flex items-center justify-center mx-auto mb-4">
+          M
+        </div>
         <h1 className="font-display text-3xl font-semibold">Welcome back</h1>
         <p className="text-sm text-inkSoft mt-1">Your daily mood booster is waiting.</p>
       </div>
@@ -34,7 +36,7 @@ export default function Login() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-teal outline-none"
+            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-slate outline-none"
             placeholder="you@example.com"
           />
         </div>
@@ -45,12 +47,12 @@ export default function Login() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-teal outline-none"
+            className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-slate outline-none"
             placeholder="••••••••"
           />
         </div>
 
-        {error && <p className="text-sm text-coral-dark font-medium">{error}</p>}
+        {error && <p className="text-sm text-danger-dark font-medium">{error}</p>}
 
         <button type="submit" disabled={loading} className="btn-pop w-full py-3.5 mt-2">
           {loading ? 'Logging in…' : 'Log in'}
@@ -59,7 +61,7 @@ export default function Login() {
 
       <p className="text-center text-sm text-inkSoft mt-6">
         New here?{' '}
-        <Link to="/signup" className="text-coral-dark font-semibold">
+        <Link to="/signup" className="text-blue-dark font-semibold">
           Create an account
         </Link>
       </p>

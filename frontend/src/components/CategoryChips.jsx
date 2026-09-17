@@ -1,11 +1,16 @@
 import React from 'react';
 
 export const CATEGORIES = [
-  { value: 'frustrated', label: 'Frustrated me', emoji: '😤' },
-  { value: 'angry', label: 'Made me angry', emoji: '😡' },
-  { value: 'upset', label: 'Upset me', emoji: '😞' },
-  { value: 'tired', label: 'Wore me out', emoji: '🥱' },
-  { value: 'funny', label: 'Actually funny', emoji: '😂' },
+  { value: 'calm', label: 'Calm', emoji: '😌' },
+  { value: 'frustrated', label: 'Frustrated', emoji: '😤' },
+  { value: 'angry', label: 'Angry', emoji: '😡' },
+  { value: 'anxious', label: 'Anxious', emoji: '😰' },
+  { value: 'upset', label: 'Upset', emoji: '😞' },
+  { value: 'stressed', label: 'Stressed', emoji: '😖' },
+  { value: 'sad', label: 'Sad', emoji: '😢' },
+  { value: 'tired', label: 'Tired', emoji: '🥱' },
+  { value: 'grateful', label: 'Grateful', emoji: '🙏' },
+  { value: 'funny', label: 'Funny', emoji: '😂' },
 ];
 
 export default function CategoryChips({ value, onChange }) {
@@ -18,7 +23,7 @@ export default function CategoryChips({ value, onChange }) {
           onClick={() => onChange(c.value)}
           className={value === c.value ? 'chip-active' : 'chip-inactive'}
         >
-          <span className="mr-1">{c.emoji}</span>
+          <span className="mr-0.5 text-xs">{c.emoji}</span>
           {c.label}
         </button>
       ))}

@@ -7,7 +7,7 @@ export default function Privacy() {
   return (
     <div className="max-w-md mx-auto pb-16">
       <TopBar title="Privacy Policy" subtitle="Last updated June 2026" right={<BackBtn onClick={() => navigate(-1)} />} />
-      <main className="px-5 pt-5 space-y-5 text-sm leading-relaxed text-ink">
+      <main className="px-5 pt-6 space-y-6 text-sm leading-relaxed text-ink">
         <Section title="Private by default">
           Every entry you write is private and visible only to you, unless you actively choose to
           share it. Sharing is always opt-in, per entry - there is no setting that shares your
@@ -50,7 +50,7 @@ export default function Privacy() {
         </Section>
 
         <Section title="Contact">
-          Questions about this policy can be sent to privacy@relol.app.
+          Questions about this policy can be sent to privacy@moodbooster.app.
         </Section>
       </main>
     </div>
@@ -60,7 +60,7 @@ export default function Privacy() {
 function Section({ title, children }) {
   return (
     <div>
-      <h2 className="font-display font-semibold text-base mb-1">{title}</h2>
+      <h2 className="section-label mb-1">{title}</h2>
       <p className="text-inkSoft">{children}</p>
     </div>
   );
@@ -68,7 +68,7 @@ function Section({ title, children }) {
 
 function BackBtn({ onClick }) {
   return (
-    <button onClick={onClick} className="text-sm font-semibold text-teal-dark">
+    <button onClick={onClick} className="text-sm font-semibold text-slate-dark">
       Back
     </button>
   );

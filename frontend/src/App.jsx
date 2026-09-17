@@ -8,7 +8,7 @@ import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import Home from './pages/Home.jsx';
 import StorySoFar from './pages/StorySoFar.jsx';
-import Relatable from './pages/Relatable.jsx';
+import MoodBoost from './pages/MoodBoost.jsx';
 import Profile from './pages/Profile.jsx';
 import Privacy from './pages/Privacy.jsx';
 import Terms from './pages/Terms.jsx';
@@ -43,10 +43,10 @@ export default function App() {
           }
         />
         <Route
-          path="/relatable"
+          path="/boost"
           element={
             <ProtectedRoute>
-              <Relatable />
+              <MoodBoost />
             </ProtectedRoute>
           }
         />

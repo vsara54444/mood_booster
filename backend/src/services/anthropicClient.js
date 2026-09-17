@@ -4,6 +4,8 @@
  * Docs: https://docs.claude.com/en/api/messages
  */
 
+const { parseJsonResponse } = require('./jsonUtils');
+
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
 
@@ -36,12 +38,6 @@ async function callClaude({ system, messages, maxTokens = 400, temperature = 1 }
   const data = await response.json();
   const textBlock = data.content.find((block) => block.type === 'text');
   return textBlock ? textBlock.text.trim() : '';
-}
-
-/** Strips ```json fences etc. and parses a JSON object from a model response. */
-function parseJsonResponse(raw) {
-  const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-  return JSON.parse(cleaned);
 }
 
 module.exports = { callClaude, parseJsonResponse };
