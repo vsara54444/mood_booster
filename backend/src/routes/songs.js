@@ -9,13 +9,13 @@ router.use(requireAuth);
 // Boost page never has it in hand until the user asks to reveal it.
 router.get('/random', async (req, res) => {
   try {
-    const { exclude } = req.query;
+    const { exclude, language } = req.query;
     const pool = getPool();
     const result = await pool.query(
       `SELECT id, emoji_clue FROM song_riddles
-       WHERE active = true AND id IS DISTINCT FROM $1
+       WHERE active = true AND language = $1 AND id IS DISTINCT FROM $2
        ORDER BY random() LIMIT 1`,
-      [exclude || null]
+      [language || 'tamil', exclude || null]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'No songs available yet.' });
     res.json({ id: result.rows[0].id, emojiClue: result.rows[0].emoji_clue });

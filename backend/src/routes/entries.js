@@ -6,6 +6,7 @@ const { generateMemeCaption } = require('../services/memeService');
 const { captionMeme } = require('../services/imgflipClient');
 const { getInterestContext } = require('./interests');
 const { pickMechanism, recordSignal } = require('../services/mechanismPreference');
+const { recordRejection } = require('../services/humorRepository');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -115,7 +116,7 @@ router.post('/:entryId/sticker', async (req, res) => {
     const regenerate = !!req.body?.regenerate;
     const pool = getPool();
     const existing = await pool.query(
-      `SELECT entry_id, category, topic_tag, cleaned_text, humor_text, sticker_image
+      `SELECT entry_id, category, topic_tag, cleaned_text, humor_text, sticker_image, sticker_template_id
        FROM entries WHERE entry_id = $1 AND user_id = $2`,
       [entryId, req.userId]
     );
@@ -124,11 +125,19 @@ router.post('/:entryId/sticker', async (req, res) => {
     if (entry.sticker_image && !regenerate) return res.json({ stickerImage: entry.sticker_image });
 
     const { motherTongue } = await getUserForEntry(pool, req.userId);
+    const recent = await pool.query(
+      `SELECT sticker_template_id FROM entries
+       WHERE user_id = $1 AND sticker_template_id IS NOT NULL
+       ORDER BY created_at DESC LIMIT 3`,
+      [req.userId]
+    );
+    const excludeTemplateIds = recent.rows.map((r) => r.sticker_template_id);
+
     const scenario = entry.cleaned_text || entry.topic_tag || entry.category;
-    const { templateId, text0, text1 } = await generateMemeCaption(scenario, entry.humor_text, motherTongue);
+    const { templateId, text0, text1 } = await generateMemeCaption(scenario, entry.humor_text, motherTongue, excludeTemplateIds);
     const stickerImage = await captionMeme({ templateId, text0, text1 });
 
-    await pool.query('UPDATE entries SET sticker_image = $2 WHERE entry_id = $1', [entryId, stickerImage]);
+    await pool.query('UPDATE entries SET sticker_image = $2, sticker_template_id = $3 WHERE entry_id = $1', [entryId, stickerImage, templateId]);
     res.json({ stickerImage });
   } catch (err) {
     console.error('[entries/sticker]', err);
@@ -159,6 +168,12 @@ router.post('/:entryId/regenerate-humor', async (req, res) => {
     // so a rejection can never just repeat the same style.
     if (entry.humor_mechanism) {
       await recordSignal(pool, { userId: req.userId, entryId, mechanism: entry.humor_mechanism, signal: 'regenerated' });
+    }
+    // Also a direct negative signal on this exact stored joke - enough real
+    // rejections (from any user) retires it from the reuse pool for good,
+    // so the library's average quality rises over time instead of just its size.
+    if (entry.humor_id) {
+      await recordRejection(pool, entry.humor_id);
     }
     const mechanism = motherTongue === 'tamil'
       ? await pickMechanism(pool, req.userId, { exclude: entry.humor_mechanism })

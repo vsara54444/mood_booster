@@ -9,6 +9,7 @@
 //
 // Usage:
 //   npm run seed-humor-library
+//   npm run seed-humor-library -- --language=telugu
 //   npm run seed-humor-library -- --bucket="Daily Life"   (one bucket only)
 //   npm run seed-humor-library -- --concurrency=6
 require('dotenv').config();
@@ -21,7 +22,7 @@ const { embedText } = require('../services/geminiEmbeddingClient');
 const { storeHumor } = require('../services/humorRepository');
 const { MECHANISMS } = require('../services/mechanismPreference');
 
-const MOTHER_TONGUE = 'tamil'; // per product spec: Tamil first, other languages later
+const DEFAULT_MOTHER_TONGUE = 'tamil';
 
 const BUCKETS = [
   { label: 'Interview + Anxiety', category: 'anxious', subcategory: 'work', count: 30,
@@ -72,15 +73,19 @@ Respond ONLY with a JSON array of ${bucket.count} strings.`;
   return arr.slice(0, bucket.count);
 }
 
-async function seedOne(pool, bucket, rawWorryText) {
+async function seedOne(pool, motherTongue, bucket, rawWorryText) {
   const classification = await cleanAndExtractSlots(rawWorryText, bucket.category);
-  const mechanism = MECHANISMS[Math.floor(Math.random() * MECHANISMS.length)];
+  // Mechanism (escalation/duo_banter/wordplay/deadpan) is a Tamil-only
+  // concept - other languages pick their comedic voice from
+  // LOCAL_LANGUAGE_STYLES instead, same as the live request path
+  // (routes/entries.js: mechanism is null for anything but Tamil).
+  const mechanism = motherTongue === 'tamil' ? MECHANISMS[Math.floor(Math.random() * MECHANISMS.length)] : null;
   const generated = await generateFreshHumor({
-    category: bucket.category, motherTongue: MOTHER_TONGUE, mechanism, worry: classification,
+    category: bucket.category, motherTongue, mechanism, worry: classification,
   });
   const embedding = await embedText(`${classification.cleanedText} ${(classification.topicKeywords || []).join(' ')}`.trim());
   return storeHumor(pool, {
-    motherTongue: MOTHER_TONGUE,
+    motherTongue,
     category: bucket.category,
     subcategory: bucket.subcategory,
     emotion: classification.emotion,
@@ -113,6 +118,7 @@ async function runWithConcurrency(items, limit, worker) {
 async function main() {
   const args = parseArgs();
   const concurrency = parseInt(args.concurrency || '4', 10);
+  const motherTongue = args.language || DEFAULT_MOTHER_TONGUE;
   const buckets = args.bucket ? BUCKETS.filter((b) => b.label === args.bucket) : BUCKETS;
   if (args.bucket && !buckets.length) {
     console.error(`Unknown bucket "${args.bucket}". Valid: ${BUCKETS.map((b) => b.label).join(', ')}`);
@@ -123,13 +129,13 @@ async function main() {
   let grandTotal = 0;
 
   for (const bucket of buckets) {
-    console.log(`\n=== ${bucket.label} (target ${bucket.count}, category=${bucket.category}, subcategory=${bucket.subcategory}) ===`);
+    console.log(`\n=== ${bucket.label} (target ${bucket.count}, category=${bucket.category}, subcategory=${bucket.subcategory}, language=${motherTongue}) ===`);
     const worries = await brainstormWorries(bucket);
     console.log(`brainstormed ${worries.length} worry variations`);
 
     const results = await runWithConcurrency(worries, concurrency, async (worryText) => {
       try {
-        const id = await seedOne(pool, bucket, worryText);
+        const id = await seedOne(pool, motherTongue, bucket, worryText);
         process.stdout.write('.');
         return id;
       } catch (err) {

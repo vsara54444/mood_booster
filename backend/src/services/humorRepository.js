@@ -119,7 +119,25 @@ async function recordHumorUsage(pool, { userId, humorId }) {
   );
 }
 
+// This is how the library actually gets better over time instead of just
+// bigger: every "not feeling it" / regenerate on a REUSED joke increments
+// its rejection_count, and once a joke racks up enough real rejections
+// (from any user, not just one) it's auto-retired from the reuse pool -
+// nobody is served that joke again, though it's kept (not deleted) for audit.
+const REJECTION_LIMIT = parseInt(process.env.HUMOR_REJECTION_LIMIT || '2', 10);
+
+async function recordRejection(pool, humorId) {
+  const result = await pool.query(
+    'UPDATE humors SET rejection_count = rejection_count + 1 WHERE id = $1 RETURNING rejection_count',
+    [humorId]
+  );
+  const rejectionCount = result.rows[0]?.rejection_count;
+  if (rejectionCount >= REJECTION_LIMIT) {
+    await pool.query('UPDATE humors SET active = false WHERE id = $1', [humorId]);
+  }
+}
+
 module.exports = {
-  findExactWorryMatch, findSuitableHumor, storeHumor, recordHumorUsage,
+  findExactWorryMatch, findSuitableHumor, storeHumor, recordHumorUsage, recordRejection,
   REUSE_SIMILARITY_THRESHOLD, EXACT_MATCH_THRESHOLD, MIN_QUALITY_TO_REUSE,
 };

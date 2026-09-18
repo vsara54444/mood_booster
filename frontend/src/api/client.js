@@ -62,6 +62,8 @@ async function request(path, opts = {}) {
 export const api = {
   signup: (payload) => request('/auth/signup', { method: 'POST', body: payload }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
+  forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: { email } }),
+  resetPassword: (token, newPassword) => request('/auth/reset-password', { method: 'POST', body: { token, newPassword } }),
 
   getTodayEntry: (token) => request('/entries/today', { token }),
   submitEntry: (token, payload) => request('/entries', { method: 'POST', body: payload, token }),
@@ -87,7 +89,13 @@ export const api = {
     request(`/puzzles/random?category=${category}${excludeId ? `&exclude=${excludeId}` : ''}`, { token }),
   getPuzzleAnswer: (token, id) => request(`/puzzles/${id}`, { token }),
 
-  getRandomSong: (token, excludeId) =>
-    request(`/songs/random${excludeId ? `?exclude=${excludeId}` : ''}`, { token }),
+  getRandomSong: (token, language, excludeId) =>
+    request(`/songs/random?language=${language || 'tamil'}${excludeId ? `&exclude=${excludeId}` : ''}`, { token }),
   getSongAnswer: (token, id) => request(`/songs/${id}`, { token }),
+
+  getRandomQuote: (token, excludeId) =>
+    request(`/quotes/random${excludeId ? `?exclude=${excludeId}` : ''}`, { token }),
+
+  logTinyWin: (token, winType) => request('/tiny-wins', { method: 'POST', body: { winType }, token }),
+  getTinyWinsSummary: (token) => request('/tiny-wins/summary', { token }),
 };

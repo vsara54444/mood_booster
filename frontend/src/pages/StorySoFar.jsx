@@ -4,6 +4,16 @@ import { useAuth } from '../context/AuthContext.jsx';
 import TopBar from '../components/TopBar.jsx';
 import LoadingDots from '../components/LoadingDots.jsx';
 
+const TINY_WIN_OPTIONS = [
+  { key: 'break', emoji: '☕', label: 'Took a break' },
+  { key: 'learned', emoji: '📚', label: 'Learned something' },
+  { key: 'laughed', emoji: '😂', label: 'Laughed' },
+  { key: 'done', emoji: '🏃', label: 'Got something done' },
+  { key: 'helped', emoji: '❤️', label: 'Helped someone' },
+  { key: 'self_care', emoji: '🌱', label: 'Took care of myself' },
+  { key: 'other', emoji: '✨', label: 'Something else' },
+];
+
 const MOOD_LABELS = { 1: '😩', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
 const PERSONALIZED_SUMMARY = {
   happy: "You've mostly been in good spirits this week 😊",
@@ -81,6 +91,8 @@ export default function StorySoFar() {
       <TopBar title="The Story So Far" subtitle="Your patterns, minus the judgment" />
 
       <main className="px-5 pt-6 space-y-6">
+        <TinyWinCard />
+
         {/* Streak + quick stats */}
         <div className="grid grid-cols-2 gap-3">
           <div className="journal-card text-center">
@@ -154,7 +166,7 @@ export default function StorySoFar() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-center mb-1">
+          <div className="grid grid-cols-3 gap-3 text-left mb-1">
             <div>
               <p className="font-mono text-xl font-bold">
                 {view === 'weekly' ? report.checkInsThisWeek : report.checkInsThisMonth}
@@ -164,6 +176,12 @@ export default function StorySoFar() {
             <div>
               <p className="font-mono text-xl font-bold">{report.averageMood ?? '—'}</p>
               <p className="text-xs text-inkSoft">Avg. mood (1-5)</p>
+            </div>
+            <div>
+              <p className="font-mono text-xl font-bold">
+                {view === 'weekly' ? report.tinyWinsThisWeek : report.tinyWinsThisMonth}
+              </p>
+              <p className="text-xs text-inkSoft">Tiny wins</p>
             </div>
           </div>
 
@@ -182,4 +200,69 @@ export default function StorySoFar() {
 
 function EmptyState({ text }) {
   return <p className="text-sm text-inkSoft text-center py-4">{text}</p>;
+}
+
+// Deliberately pressure-free: no streak, no daily limit, no "you missed a
+// day" framing. One tap logs it and shows a quiet confirmation - the summary
+// only ever counts up, never calls out a gap.
+function TinyWinCard() {
+  const { accessToken } = useAuth();
+  const [summary, setSummary] = useState(null);
+  const [justLogged, setJustLogged] = useState(null);
+
+  async function loadSummary() {
+    try {
+      const data = await api.getTinyWinsSummary(accessToken);
+      setSummary(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  useEffect(() => {
+    loadSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
+
+  async function logWin(key) {
+    setJustLogged(key);
+    try {
+      await api.logTinyWin(accessToken, key);
+      loadSummary();
+    } catch (err) {
+      console.error(err);
+    }
+    setTimeout(() => setJustLogged(null), 1500);
+  }
+
+  return (
+    <div className="journal-card">
+      <p className="section-label mb-1">Tiny win</p>
+      <p className="text-sm text-inkSoft mb-3">What was your tiny win?</p>
+
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        {TINY_WIN_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => logWin(opt.key)}
+            className="journal-card !shadow-none text-left py-2.5 px-3 active:scale-95 transition-transform flex items-center gap-2"
+          >
+            <span className="text-lg">{opt.emoji}</span>
+            <span className="text-xs font-medium leading-tight">{opt.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {justLogged && (
+        <p className="text-xs font-semibold text-blue-dark text-center mb-2">Logged ✨ nice one.</p>
+      )}
+
+      {summary && summary.total > 0 && (
+        <p className="text-xs text-inkSoft text-center">
+          {summary.thisWeek} tiny win{summary.thisWeek === 1 ? '' : 's'} this week · {summary.total} total
+        </p>
+      )}
+    </div>
+  );
 }

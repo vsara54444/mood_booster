@@ -93,6 +93,21 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ---------- Password Reset Tokens ----------
+-- token_hash is a SHA-256 hex digest of the raw token emailed to the user
+-- (deterministic, so we can look it up directly - unlike bcrypt, which is
+-- fine here since the raw token is already high-entropy random bytes, not
+-- a human-chosen password).
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  token_id   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID        NOT NULL REFERENCES users(user_id),
+  token_hash VARCHAR(64) NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id, created_at DESC);
+
 -- ---------- Judge Rotation (round-robins which provider grades humor candidates) ----------
 CREATE TABLE IF NOT EXISTS judge_rotation (
   id         SMALLINT PRIMARY KEY DEFAULT 1,
@@ -112,6 +127,10 @@ ALTER TABLE entries ADD COLUMN IF NOT EXISTS song_text TEXT;
 -- Cached AI-generated sticker (data URI). Generated at most once per entry,
 -- on demand via POST /api/entries/:entryId/sticker - never automatically.
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS sticker_image TEXT;
+-- Which meme template rendered sticker_image, so future stickers for this
+-- user can exclude recently-used templates - the AI writer otherwise has a
+-- strong bias toward one "safe default" template regardless of situation.
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS sticker_template_id VARCHAR(20);
 CREATE TABLE IF NOT EXISTS judge_rotation (
   id         SMALLINT PRIMARY KEY DEFAULT 1,
   last_index INT      NOT NULL DEFAULT -1
@@ -273,10 +292,13 @@ CREATE TABLE IF NOT EXISTS humors (
   active             BOOLEAN      NOT NULL DEFAULT true,
   source             VARCHAR(20)  NOT NULL DEFAULT 'ai_generated',  -- never book/copyrighted text - see templateAuthoring/freshHumorWriter comments
   generation_model   VARCHAR(40),
-  version            INT          NOT NULL DEFAULT 1
+  version            INT          NOT NULL DEFAULT 1,
+  rejection_count    INT          NOT NULL DEFAULT 0   -- "not feeling it" / regenerate hits on this specific stored joke
 );
 CREATE INDEX IF NOT EXISTS idx_humors_lookup ON humors(mother_tongue, category, subcategory) WHERE active;
 CREATE INDEX IF NOT EXISTS idx_humors_topic_keywords ON humors USING GIN (topic_keywords);
+-- Added after the table's first release - needed for tables created before this line existed.
+ALTER TABLE humors ADD COLUMN IF NOT EXISTS rejection_count INT NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS idx_humors_embedding ON humors USING hnsw (embedding vector_cosine_ops);
 -- Was added after the table's first release - needed for tables created before this line existed.
 ALTER TABLE humors ADD COLUMN IF NOT EXISTS normalized_worry_tokens TEXT NOT NULL DEFAULT '';
@@ -322,6 +344,7 @@ CREATE INDEX IF NOT EXISTS idx_puzzles_category ON puzzles(category) WHERE activ
 -- =========================================================
 CREATE TABLE IF NOT EXISTS song_riddles (
   id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  language   VARCHAR(10)  NOT NULL DEFAULT 'tamil',   -- 'tamil' | 'telugu' | ...
   era        VARCHAR(10)  NOT NULL,   -- '70s' | '80s' | '90s_2000s'
   emoji_clue TEXT         NOT NULL,
   song_name  TEXT         NOT NULL,
@@ -331,3 +354,36 @@ CREATE TABLE IF NOT EXISTS song_riddles (
   created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_song_riddles_era ON song_riddles(era) WHERE active;
+-- Added after the table's first release (was Tamil-only) - needed for tables created before this line existed.
+ALTER TABLE song_riddles ADD COLUMN IF NOT EXISTS language VARCHAR(10) NOT NULL DEFAULT 'tamil';
+CREATE INDEX IF NOT EXISTS idx_song_riddles_language_era ON song_riddles(language, era) WHERE active;
+
+-- =========================================================
+--  Migration: Motivational quote bank (Boost page), replacing
+--  the hardcoded 5-item array that was repeating constantly.
+--  Same pattern as puzzles/song_riddles - pre-authored and
+--  stored, so "Try another" costs zero AI API calls. See
+--  routes/quotes.js and scripts/seedQuotes.js.
+-- =========================================================
+CREATE TABLE IF NOT EXISTS quotes (
+  id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  text       TEXT         NOT NULL,
+  author     VARCHAR(100),
+  active     BOOLEAN      NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_quotes_active ON quotes(active) WHERE active;
+
+-- =========================================================
+--  Migration: Tiny Wins (The Story So Far page). A deliberately
+--  pressure-free log - one tap, no daily limit, no streak tied
+--  to it, so it never feels like another thing to keep up with.
+--  See routes/tinyWins.js.
+-- =========================================================
+CREATE TABLE IF NOT EXISTS tiny_wins (
+  id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID         NOT NULL REFERENCES users(user_id),
+  win_type   VARCHAR(20)  NOT NULL,   -- 'break' | 'learned' | 'laughed' | 'done' | 'helped' | 'self_care' | 'other'
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tiny_wins_user ON tiny_wins(user_id, created_at DESC);

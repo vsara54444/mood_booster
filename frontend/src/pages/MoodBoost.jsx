@@ -13,42 +13,11 @@ const EMOTIONS = [
   { key: 'happy', label: 'Happy', emoji: '😊' },
 ];
 
-const QUOTES = [
-  '"This too shall pass." — Persian proverb',
-  '"You are not your thoughts."',
-  '"Small steps still move you forward."',
-  '"Breathe. You\'ve survived 100% of your worst days so far."',
-  "\"Be gentle with yourself. You're doing the best you can.\"",
-];
 
 function ytSearch(query) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
 }
 
-// Mother-tongue-specific song picks. Everything not listed here (english, other,
-// unset) falls back to Tamil, matching aiService.js's existing default humor style.
-const LANGUAGE_MUSIC = {
-  hindi: [
-    { title: '"Kun Faya Kun" — Rockstar (2011), a serene qawwali number.', href: ytSearch('Kun Faya Kun Rockstar') },
-    { title: '"Tum Hi Ho" — Aashiqui 2 (2013), a slow soulful ballad.', href: ytSearch('Tum Hi Ho Aashiqui 2') },
-  ],
-  tamil: [
-    { title: '"Vaseegara" — Minnale (2001), A.R. Rahman.', href: ytSearch('Vaseegara Minnale') },
-    { title: '"Munbe Vaa" — Sillunu Oru Kaadhal (2006), A.R. Rahman.', href: ytSearch('Munbe Vaa Sillunu Oru Kaadhal') },
-  ],
-  telugu: [
-    { title: '"Inkem Inkem Kaavaale" — Geetha Govindam (2018).', href: ytSearch('Inkem Inkem Kaavaale Geetha Govindam') },
-    { title: '"Yemito" — Ninnu Kori (2017), sung by Sid Sriram.', href: ytSearch('Yemito Ninnu Kori Sid Sriram') },
-  ],
-  malayalam: [
-    { title: '"Aaromale" — from Vinnaithaandi Varuvaayaa.', href: ytSearch('Aaromale Vinnaithaandi Varuvaayaa') },
-    { title: '"Aa Nimisham" — Bangalore Days (2014).', href: ytSearch('Aa Nimisham Bangalore Days') },
-  ],
-  kannada: [
-    { title: '"Ninnindale" — Milana (2007).', href: ytSearch('Ninnindale Milana') },
-    { title: '"Aaha Enendu" — Mungaru Male (2006).', href: ytSearch('Aaha Enendu Mungaru Male') },
-  ],
-};
 
 const CHALLENGES = [
   'Stretch for 1 minute.',
@@ -90,18 +59,6 @@ function recordShownIndex(id, index) {
 export default function MoodBoost() {
   const { accessToken } = useAuth();
   const [emotion, setEmotion] = useState(null);
-  const [motherTongue, setMotherTongue] = useState('other');
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const { user } = await api.getProfile(accessToken);
-        setMotherTongue(user.mother_tongue || 'other');
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, [accessToken]);
 
   return (
     <div className="max-w-md mx-auto pb-28">
@@ -131,27 +88,7 @@ export default function MoodBoost() {
 
             <PuzzleCard />
 
-            <ShuffleCard id="quote" title="Motivational quote" items={QUOTES}>
-              {(q) => <p className="text-sm text-ink italic leading-relaxed">{q}</p>}
-            </ShuffleCard>
-
-            <ShuffleCard
-              key={`music-${motherTongue}`}
-              id={`music-${motherTongue}`}
-              title="Music to Listen"
-              items={LANGUAGE_MUSIC[motherTongue] || LANGUAGE_MUSIC.tamil}
-            >
-              {(m) => (
-                <a
-                  href={m.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-blue-dark"
-                >
-                  <span>▶</span> Listen on YouTube
-                </a>
-              )}
-            </ShuffleCard>
+            <QuoteCard />
 
             <SongRiddleCard />
 
@@ -369,22 +306,39 @@ function PuzzleCard() {
 
 // Emoji clues + answers are pre-authored and stored in song_riddles (see
 // scripts/seedSongs.js) - playing never triggers an AI call, same as PuzzleCard.
+const SONG_LANGUAGES = [
+  { key: 'tamil', label: 'Tamil' },
+  { key: 'telugu', label: 'Telugu' },
+];
+
 function SongRiddleCard() {
   const { accessToken } = useAuth();
+  const [motherTongue, setMotherTongue] = useState('tamil');
   const [song, setSong] = useState(null); // { id, emojiClue }
   const [answer, setAnswer] = useState(null); // { songName, movieName, singer }, fetched only on reveal
   const [guess, setGuess] = useState('');
   const [loadError, setLoadError] = useState(false);
   const [prefetch, setPrefetch] = useState(null);
 
-  async function load(excludeId) {
+  useEffect(() => {
+    (async () => {
+      try {
+        const { user } = await api.getProfile(accessToken);
+        setMotherTongue(SONG_LANGUAGES.some((l) => l.key === user.mother_tongue) ? user.mother_tongue : 'tamil');
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [accessToken]);
+
+  async function load(language, excludeId) {
     setLoadError(false);
     setAnswer(null);
     setGuess('');
     try {
-      const data = await api.getRandomSong(accessToken, excludeId);
+      const data = await api.getRandomSong(accessToken, language, excludeId);
       setSong(data);
-      api.getRandomSong(accessToken, data.id).then(setPrefetch).catch(() => {});
+      api.getRandomSong(accessToken, language, data.id).then(setPrefetch).catch(() => {});
     } catch (err) {
       console.error(err);
       setLoadError(true);
@@ -392,9 +346,10 @@ function SongRiddleCard() {
   }
 
   useEffect(() => {
-    load(null);
+    setPrefetch(null);
+    load(motherTongue, null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [accessToken, motherTongue]);
 
   function tryAnother() {
     if (prefetch) {
@@ -402,9 +357,9 @@ function SongRiddleCard() {
       setPrefetch(null);
       setAnswer(null);
       setGuess('');
-      api.getRandomSong(accessToken, prefetch.id).then(setPrefetch).catch(() => {});
+      api.getRandomSong(accessToken, motherTongue, prefetch.id).then(setPrefetch).catch(() => {});
     } else {
-      load(song?.id);
+      load(motherTongue, song?.id);
     }
   }
 
@@ -420,12 +375,27 @@ function SongRiddleCard() {
 
   return (
     <div className="journal-card">
-      <p className="section-label mb-2">Guess the song</p>
+      <div className="flex items-center justify-between mb-2">
+        <p className="section-label">Guess the song</p>
+        <div className="flex gap-1">
+          {SONG_LANGUAGES.map((l) => (
+            <button
+              key={l.key}
+              type="button"
+              onClick={() => setMotherTongue(l.key)}
+              className={l.key === motherTongue ? 'chip-active' : 'chip-inactive'}
+              style={{ padding: '2px 10px', fontSize: '11px' }}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {loadError ? (
         <>
           <p className="text-sm text-inkSoft mb-3">Couldn't load a clue. Check your connection and try again.</p>
-          <button type="button" onClick={() => load(null)} className="btn-pop w-full py-2 text-sm">
+          <button type="button" onClick={() => load(motherTongue, null)} className="btn-pop w-full py-2 text-sm">
             Retry
           </button>
         </>
@@ -450,6 +420,14 @@ function SongRiddleCard() {
               <p className="text-xs text-inkSoft leading-relaxed">
                 {[answer.movieName, answer.singer].filter(Boolean).join(' — ')}
               </p>
+              <a
+                href={ytSearch([answer.songName, answer.movieName].filter(Boolean).join(' '))}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-semibold text-blue-dark pt-1"
+              >
+                <span>▶</span> Listen on YouTube
+              </a>
             </div>
           ) : (
             <button
@@ -467,6 +445,55 @@ function SongRiddleCard() {
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+// Quotes are pre-authored and stored in the `quotes` table (see
+// scripts/seedQuotes.js) - "Try another" is a plain DB read, no AI call.
+function QuoteCard() {
+  const { accessToken } = useAuth();
+  const [quote, setQuote] = useState(null); // { id, text, author }
+  const [prefetch, setPrefetch] = useState(null);
+
+  async function load(excludeId) {
+    try {
+      const data = await api.getRandomQuote(accessToken, excludeId);
+      setQuote(data);
+      api.getRandomQuote(accessToken, data.id).then(setPrefetch).catch(() => {});
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  useEffect(() => {
+    load(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
+
+  function tryAnother() {
+    if (prefetch) {
+      setQuote(prefetch);
+      setPrefetch(null);
+      api.getRandomQuote(accessToken, prefetch.id).then(setPrefetch).catch(() => {});
+    } else {
+      load(quote?.id);
+    }
+  }
+
+  return (
+    <div className="journal-card">
+      <p className="section-label mb-2">Motivational quote</p>
+      {quote ? (
+        <p className="text-sm text-ink italic leading-relaxed">
+          "{quote.text}"{quote.author ? <span className="not-italic text-inkSoft"> — {quote.author}</span> : null}
+        </p>
+      ) : (
+        <p className="text-sm text-inkSoft">Loading…</p>
+      )}
+      <button type="button" onClick={tryAnother} className="mt-3 text-xs font-semibold text-slate-dark">
+        Try another ↻
+      </button>
     </div>
   );
 }

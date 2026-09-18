@@ -41,13 +41,19 @@ router.get('/summary', async (req, res) => {
 router.get('/weekly', async (req, res) => {
   try {
     const pool = getPool();
-    const result = await pool.query(
-      `SELECT created_at::DATE AS entry_date, category, mood, humor_text, perspective_text, action_text
-       FROM entries WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '7 days'
-       ORDER BY created_at ASC`,
-      [req.userId]
-    );
-    const entries = result.rows;
+    const [entriesRes, tinyWinsRes] = await Promise.all([
+      pool.query(
+        `SELECT created_at::DATE AS entry_date, category, mood, humor_text, perspective_text, action_text
+         FROM entries WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '7 days'
+         ORDER BY created_at ASC`,
+        [req.userId]
+      ),
+      pool.query(
+        `SELECT count(*) FROM tiny_wins WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '7 days'`,
+        [req.userId]
+      ),
+    ]);
+    const entries = entriesRes.rows;
     const avgMood = entries.length
       ? Math.round((entries.reduce((s, e) => s + e.mood, 0) / entries.length) * 10) / 10
       : null;
@@ -55,7 +61,13 @@ router.get('/weekly', async (req, res) => {
       acc[e.category] = (acc[e.category] || 0) + 1;
       return acc;
     }, {});
-    res.json({ checkInsThisWeek: entries.length, averageMood: avgMood, categoryCounts, entries });
+    res.json({
+      checkInsThisWeek: entries.length,
+      averageMood: avgMood,
+      tinyWinsThisWeek: Number(tinyWinsRes.rows[0].count),
+      categoryCounts,
+      entries,
+    });
   } catch (err) {
     console.error('[dashboard/weekly]', err);
     res.status(500).json({ error: 'Could not load your weekly report.' });
@@ -65,13 +77,19 @@ router.get('/weekly', async (req, res) => {
 router.get('/monthly', async (req, res) => {
   try {
     const pool = getPool();
-    const result = await pool.query(
-      `SELECT created_at::DATE AS entry_date, category, mood FROM entries
-       WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
-       ORDER BY created_at ASC`,
-      [req.userId]
-    );
-    const entries = result.rows;
+    const [entriesRes, tinyWinsRes] = await Promise.all([
+      pool.query(
+        `SELECT created_at::DATE AS entry_date, category, mood FROM entries
+         WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
+         ORDER BY created_at ASC`,
+        [req.userId]
+      ),
+      pool.query(
+        `SELECT count(*) FROM tiny_wins WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '30 days'`,
+        [req.userId]
+      ),
+    ]);
+    const entries = entriesRes.rows;
     const avgMood = entries.length
       ? Math.round((entries.reduce((s, e) => s + e.mood, 0) / entries.length) * 10) / 10
       : null;
@@ -83,7 +101,13 @@ router.get('/monthly', async (req, res) => {
     const moodDelta = firstHalf !== null && secondHalf !== null
       ? Math.round((secondHalf - firstHalf) * 10) / 10
       : null;
-    res.json({ checkInsThisMonth: entries.length, averageMood: avgMood, moodDelta, entries });
+    res.json({
+      checkInsThisMonth: entries.length,
+      averageMood: avgMood,
+      tinyWinsThisMonth: Number(tinyWinsRes.rows[0].count),
+      moodDelta,
+      entries,
+    });
   } catch (err) {
     console.error('[dashboard/monthly]', err);
     res.status(500).json({ error: 'Could not load your monthly report.' });

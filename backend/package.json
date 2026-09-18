@@ -9,7 +9,8 @@
     "generate-jokes": "node src/scripts/generateJokeTemplates.js",
     "seed-humor-library": "node src/scripts/seedHumorLibrary.js",
     "seed-puzzles": "node src/scripts/seedPuzzles.js",
-    "seed-songs": "node src/scripts/seedSongs.js"
+    "seed-songs": "node src/scripts/seedSongs.js",
+    "seed-quotes": "node src/scripts/seedQuotes.js"
   },
   "engines": { "node": ">=18.0.0" },
   "dependencies": {

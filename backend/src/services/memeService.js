@@ -56,10 +56,21 @@ const LOCAL_MEME_STYLES = {
   },
 };
 
-async function generateMemeCaption(scenario, humorText, motherTongue) {
+// excludeTemplateIds: templates this user was recently shown (see
+// routes/entries.js) - removed from the candidate list entirely rather than
+// just asked to avoid, since Claude reliably defaults to "This Is Fine"
+// regardless of the actual situation when given a free choice (verified:
+// 6 completely different scenarios all picked it). An excluded template
+// can't be picked if it was never offered.
+async function generateMemeCaption(scenario, humorText, motherTongue, excludeTemplateIds = []) {
   const style = LOCAL_MEME_STYLES[motherTongue];
-  const templates = style ? style.templates : ENGLISH_TEMPLATES;
+  const fullTemplateSet = style ? style.templates : ENGLISH_TEMPLATES;
   const languageInstruction = style ? style.languageInstruction : 'Write both captions in English.';
+
+  const filtered = fullTemplateSet.filter((t) => !excludeTemplateIds.includes(t.id));
+  // Never filter down to nothing - if every template was recently used
+  // (small template sets), fall back to the full set rather than erroring.
+  const templates = filtered.length ? filtered : fullTemplateSet;
 
   const system = `You are a meme caption writer for a mood-journaling app. Given a short everyday ` +
     `situation and a joke someone made about it, pick the single best-fitting meme template from this ` +
