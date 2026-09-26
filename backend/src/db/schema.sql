@@ -195,9 +195,15 @@ INSERT INTO interest_categories (category_key, label, is_multi_select, sort_orde
   ('other_favorite',  'Any Other Favorite',       true,  9)
 ON CONFLICT (category_key) DO NOTHING;
 
+-- Migration: Profile "What kind of humor do you like?" (multi-select chips,
+-- read by freshHumorWriter.js to steer the joke style).
+INSERT INTO interest_categories (category_key, label, is_multi_select, sort_order) VALUES
+  ('humor_style', 'Favorite Humor Style', true, 10)
+ON CONFLICT (category_key) DO NOTHING;
+
 -- =========================================================
 --  Migration: implicit Tamil comedic-mechanism preference learning
---  (escalation / duo_banter / wordplay / deadpan - see
+--  (escalation / duo_banter / wordplay / deadpan / kadi - see
 --  aiService.js TAMIL_MECHANISMS and mechanismPreference.js).
 --  The mechanism a user prefers is inferred from regenerate/vote
 --  behavior, never asked for directly. Safe to re-run.
@@ -387,3 +393,21 @@ CREATE TABLE IF NOT EXISTS tiny_wins (
   created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_tiny_wins_user ON tiny_wins(user_id, created_at DESC);
+
+-- =========================================================
+--  Migration: login events (audit log of successful logins,
+--  so total/unique login counts can be queried directly) and
+--  activating the previously-unused `refresh_tokens` table as
+--  a real, rotating session store - each /auth/refresh call
+--  swaps the old row for a new one with a fresh expiry, so an
+--  actively-used session never forces a re-login. See
+--  routes/auth.js. Safe to re-run - idempotent.
+-- =========================================================
+CREATE TABLE IF NOT EXISTS login_events (
+  id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID         NOT NULL REFERENCES users(user_id),
+  email      VARCHAR(256) NOT NULL,
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_login_events_user    ON login_events(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_login_events_created ON login_events(created_at DESC);

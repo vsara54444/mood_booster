@@ -55,6 +55,31 @@
   }
 }
 
+/* Boost page: warm tinted surfaces instead of white, to sit on the autumn
+   background. Scoped so other pages keep their white cards. */
+.boost-page .journal-card {
+  background-color: rgba(255, 237, 213, 0.82); /* orange-100 */
+}
+.boost-page .chip-inactive {
+  background-color: rgba(255, 237, 213, 0.82);
+  border-color: rgba(253, 186, 116, 0.5); /* orange-300 */
+}
+.boost-page .bg-paperDim {
+  background-color: rgba(254, 243, 199, 0.9); /* amber-100 */
+}
+
+/* Profile page: light sky surfaces instead of white. */
+.profile-page .journal-card {
+  background-color: rgba(224, 242, 254, 0.85); /* sky-100 */
+}
+.profile-page .chip-inactive {
+  background-color: rgba(224, 242, 254, 0.85);
+  border-color: rgba(186, 230, 253, 1); /* sky-200 */
+}
+.profile-page .bg-paperDim {
+  background-color: rgba(240, 249, 255, 1); /* sky-50 */
+}
+
 @layer utilities {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);

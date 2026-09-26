@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { USER_TYPES, MOTHER_TONGUES } from '../constants/userOptions.js';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 export default function Signup() {
   const { signup, loading, error } = useAuth();
@@ -34,8 +35,11 @@ export default function Signup() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Name</label>
+          <label htmlFor="signup-name" className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Name</label>
           <input
+            id="signup-name"
+            name="name"
+            autoComplete="name"
             value={form.displayName}
             onChange={(e) => update('displayName', e.target.value)}
             className="mt-1 w-full rounded-2xl border border-lavender bg-white px-4 py-3 text-sm focus:border-slate outline-none"
@@ -43,9 +47,12 @@ export default function Signup() {
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Email</label>
+          <label htmlFor="signup-email" className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Email</label>
           <input
+            id="signup-email"
+            name="email"
             type="email"
+            autoComplete="username"
             required
             value={form.email}
             onChange={(e) => update('email', e.target.value)}
@@ -54,9 +61,11 @@ export default function Signup() {
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Password</label>
-          <input
-            type="password"
+          <label htmlFor="signup-password" className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Password</label>
+          <PasswordInput
+            id="signup-password"
+            name="password"
+            autoComplete="new-password"
             required
             minLength={8}
             value={form.password}

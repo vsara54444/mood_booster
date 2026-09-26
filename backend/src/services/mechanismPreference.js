@@ -11,7 +11,7 @@
 // highest-scoring mechanism for this user, but keep exploring so preferences
 // can be discovered (cold start) and can drift over time.
 
-const MECHANISMS = ['escalation', 'duo_banter', 'wordplay', 'deadpan'];
+const MECHANISMS = ['escalation', 'duo_banter', 'wordplay', 'deadpan', 'kadi'];
 
 const SIGNAL_WEIGHTS = {
   kept: 1,
@@ -23,8 +23,22 @@ const SIGNAL_WEIGHTS = {
 
 const EXPLORATION_RATE = 0.2;
 
+// Product decision: Vadivelu-style escalation is the strong default comedic
+// feel, but the bandit above should still get a real chance to discover a
+// user prefers something else - so whenever a mechanism would otherwise be
+// picked uniformly at random (cold start / exploration), heavily weight
+// toward escalation instead of picking all 4 with equal odds.
+const DEFAULT_MECHANISM = 'escalation';
+const DEFAULT_MECHANISM_WEIGHT = 0.7;
+
 function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function pickWeightedRandom(candidates) {
+  if (candidates.length === 1 || !candidates.includes(DEFAULT_MECHANISM)) return pickRandom(candidates);
+  if (Math.random() < DEFAULT_MECHANISM_WEIGHT) return DEFAULT_MECHANISM;
+  return pickRandom(candidates.filter((m) => m !== DEFAULT_MECHANISM));
 }
 
 async function scoresByMechanism(pool, userId) {
@@ -52,7 +66,7 @@ async function pickMechanism(pool, userId, { exclude } = {}) {
   const hasAnySignal = [...scores.values()].some((v) => v !== 0);
 
   if (!hasAnySignal || Math.random() < EXPLORATION_RATE) {
-    return pickRandom(candidates);
+    return pickWeightedRandom(candidates);
   }
 
   let best = candidates[0];

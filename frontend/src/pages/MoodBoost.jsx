@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import TopBar from '../components/TopBar.jsx';
+import { checkAnswer, isJunkGuess } from '../utils/answerMatch.js';
+import { BOOST_THEME, DEFAULT_BOOST_THEME } from '../constants/moodColors.js';
+import AutumnBreeze from '../components/AutumnBreeze.jsx';
 
 const EMOTIONS = [
   { key: 'stressed', label: 'Stressed', emoji: '😣' },
@@ -59,55 +62,81 @@ function recordShownIndex(id, index) {
 export default function MoodBoost() {
   const { accessToken } = useAuth();
   const [emotion, setEmotion] = useState(null);
+  const [hovered, setHovered] = useState(null);
+
+  // Background reacts to the emotion once picked; while still choosing, a
+  // hover/tap preview lets the color respond even before committing - the
+  // whole picker feels alive rather than just the end state.
+  const previewKey = emotion?.key || hovered;
+  const theme = BOOST_THEME[previewKey] || DEFAULT_BOOST_THEME;
 
   return (
-    <div className="max-w-md mx-auto pb-28">
-      <TopBar title="Boost" subtitle="A quick reset when you need it" />
+    <div className={`boost-page relative min-h-screen overflow-hidden bg-gradient-to-b ${theme.bg} transition-colors duration-700 ease-in-out`}>
+      <AutumnBreeze />
+      <div className="relative max-w-md mx-auto pb-28">
+        <TopBar
+          className="bg-orange-100/80 border-orange-200/70 shadow-sm"
+          title={<span>Mood <span className={theme.accent}>Boost</span></span>}
+          subtitle={
+            <span className="inline-flex whitespace-nowrap rounded-full bg-gradient-to-r from-fuchsia-500 to-orange-400 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm">
+              A quick reset when you need it
+            </span>
+          }
+        />
 
-      <main className="px-5 pt-6 space-y-6">
-        {!emotion ? (
-          <>
-            <p className="font-display text-lg font-semibold text-center">How are you feeling right now?</p>
-            <div className="grid grid-cols-2 gap-3">
-              {EMOTIONS.map((e) => (
-                <button
-                  key={e.key}
-                  type="button"
-                  onClick={() => setEmotion(e)}
-                  className="journal-card text-center py-5 active:scale-95 transition-transform"
-                >
-                  <p className="text-3xl mb-1">{e.emoji}</p>
-                  <p className="text-sm font-semibold">{e.label}</p>
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <BreathingCard />
+        <main className="px-5 pt-6 space-y-6">
+          {!emotion ? (
+            <>
+              <p className="font-display text-lg font-semibold text-center">How are you feeling right now?</p>
+              <div className="grid grid-cols-2 gap-3">
+                {EMOTIONS.map((e) => {
+                  const optTheme = BOOST_THEME[e.key];
+                  return (
+                    <button
+                      key={e.key}
+                      type="button"
+                      onClick={() => setEmotion(e)}
+                      onMouseEnter={() => setHovered(e.key)}
+                      onMouseLeave={() => setHovered((h) => (h === e.key ? null : h))}
+                      onTouchStart={() => setHovered(e.key)}
+                      className={`journal-card text-center py-5 active:scale-95 transition-all duration-300 ease-out border-2 ${
+                        hovered === e.key ? optTheme.card : 'border-transparent'
+                      }`}
+                    >
+                      <p className="text-3xl mb-1">{e.emoji}</p>
+                      <p className={`text-sm font-semibold transition-colors duration-300 ease-out ${hovered === e.key ? optTheme.accent : ''}`}>{e.label}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <>
+              <BreathingCard />
 
-            <PuzzleCard />
+              <PuzzleCard />
 
-            <QuoteCard />
+              <QuoteCard />
 
-            <SongRiddleCard />
+              <SongRiddleCard />
 
-            <ShuffleCard id="challenge" title="Tiny challenge" items={CHALLENGES}>
-              {(c) => <p className="text-sm text-ink leading-relaxed">{c}</p>}
-            </ShuffleCard>
+              <ShuffleCard id="challenge" title="Tiny challenge" items={CHALLENGES}>
+                {(c) => <p className="text-sm text-ink leading-relaxed">{c}</p>}
+              </ShuffleCard>
 
-            <MoodCheck />
+              <MoodCheck />
 
-            <button
-              type="button"
-              onClick={() => setEmotion(null)}
-              className="w-full text-center text-xs font-semibold text-inkSoft py-2"
-            >
-              Choose a different feeling
-            </button>
-          </>
-        )}
-      </main>
+              <button
+                type="button"
+                onClick={() => { setEmotion(null); setHovered(null); }}
+                className="w-full text-center text-xs font-semibold text-inkSoft py-2"
+              >
+                Choose a different feeling
+              </button>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
@@ -216,10 +245,10 @@ function PuzzleCard() {
   }
 
   async function reveal() {
-    if (!userAnswer.trim() || !puzzle) return;
+    if (!userAnswer.trim() || isJunkGuess(userAnswer) || !puzzle) return;
     try {
       const data = await api.getPuzzleAnswer(accessToken, puzzle.id);
-      setAnswer(data);
+      setAnswer({ ...data, isCorrect: checkAnswer(userAnswer, data.answer) });
     } catch (err) {
       console.error(err);
     }
@@ -270,8 +299,10 @@ function PuzzleCard() {
 
           {answer ? (
             <div className="space-y-2">
-              <div className="rounded-2xl bg-lavender-light px-4 py-3">
-                <p className="text-xs font-semibold text-inkSoft mb-1">Your answer</p>
+              <div className={`rounded-2xl px-4 py-3 ${answer.isCorrect ? 'bg-lime-100' : 'bg-lavender-light'}`}>
+                <p className="text-xs font-semibold text-inkSoft mb-1">
+                  {answer.isCorrect ? '✅ Correct! Your answer' : 'Your answer'}
+                </p>
                 <p className="text-sm text-ink leading-relaxed">{userAnswer}</p>
               </div>
               <div className="rounded-2xl bg-paperDim px-4 py-3 space-y-1">
@@ -280,14 +311,19 @@ function PuzzleCard() {
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={reveal}
-              disabled={!userAnswer.trim()}
-              className="btn-pop w-full py-2 text-sm disabled:opacity-50"
-            >
-              Reveal answer
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={reveal}
+                disabled={!userAnswer.trim() || isJunkGuess(userAnswer)}
+                className="btn-pop w-full py-2 text-sm disabled:opacity-50"
+              >
+                Reveal answer
+              </button>
+              {userAnswer.trim() && isJunkGuess(userAnswer) && (
+                <p className="text-xs text-inkSoft mt-1.5">Give it a real guess first - even a rough one is fine.</p>
+              )}
+            </>
           )}
 
           <div className="flex gap-4 mt-3">
@@ -364,10 +400,10 @@ function SongRiddleCard() {
   }
 
   async function reveal() {
-    if (!guess.trim() || !song) return;
+    if (!guess.trim() || isJunkGuess(guess) || !song) return;
     try {
       const data = await api.getSongAnswer(accessToken, song.id);
-      setAnswer(data);
+      setAnswer({ ...data, isCorrect: checkAnswer(guess, data.songName) });
     } catch (err) {
       console.error(err);
     }
@@ -415,7 +451,8 @@ function SongRiddleCard() {
           />
 
           {answer ? (
-            <div className="rounded-2xl bg-paperDim px-4 py-3 space-y-1 mb-3">
+            <div className={`rounded-2xl px-4 py-3 space-y-1 mb-3 ${answer.isCorrect ? 'bg-lime-100' : 'bg-paperDim'}`}>
+              {answer.isCorrect && <p className="text-xs font-semibold text-lime-700">✅ Correct!</p>}
               <p className="text-sm font-semibold text-ink">{answer.songName}</p>
               <p className="text-xs text-inkSoft leading-relaxed">
                 {[answer.movieName, answer.singer].filter(Boolean).join(' — ')}
@@ -430,14 +467,19 @@ function SongRiddleCard() {
               </a>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={reveal}
-              disabled={!guess.trim()}
-              className="btn-pop w-full py-2 text-sm disabled:opacity-50 mb-3"
-            >
-              Reveal answer
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={reveal}
+                disabled={!guess.trim() || isJunkGuess(guess)}
+                className="btn-pop w-full py-2 text-sm disabled:opacity-50"
+              >
+                Reveal answer
+              </button>
+              <p className="text-xs text-inkSoft mt-1.5 mb-3 min-h-[1em]">
+                {guess.trim() && isJunkGuess(guess) ? 'Give it a real guess first - even a rough one is fine.' : ''}
+              </p>
+            </>
           )}
 
           <button type="button" onClick={tryAnother} className="text-xs font-semibold text-slate-dark">
@@ -498,6 +540,64 @@ function QuoteCard() {
   );
 }
 
+// Soft singing-bowl "ting", synthesized with Web Audio so there's no audio
+// file to ship: a few inharmonic partials with long exponential decays.
+let audioCtx = null;
+function playTing() {
+  try {
+    audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+    const master = audioCtx.createGain();
+    master.gain.value = 0.35;
+    master.connect(audioCtx.destination);
+    [[528, 1, 4.5], [528 * 2.76, 0.35, 2.5], [528 * 5.4, 0.12, 1.2]].forEach(([freq, level, decay]) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(level, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+      osc.connect(gain).connect(master);
+      osc.start(now);
+      osc.stop(now + decay + 0.1);
+    });
+  } catch {
+    // Audio unavailable (old browser / blocked) - the exercise works silently.
+  }
+}
+
+// Calm dusk scene - sky, sun, layered hills and a still lake - shown behind
+// the breathing circle while the exercise runs.
+function PeacefulScene() {
+  return (
+    <svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full" aria-hidden="true">
+      <defs>
+        <linearGradient id="calm-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#C4B5FD" />
+          <stop offset="55%" stopColor="#FBCFE8" />
+          <stop offset="100%" stopColor="#FED7AA" />
+        </linearGradient>
+        <linearGradient id="calm-lake" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#A5B4FC" />
+          <stop offset="100%" stopColor="#818CF8" />
+        </linearGradient>
+      </defs>
+      <rect width="320" height="200" fill="url(#calm-sky)" />
+      <circle cx="160" cy="118" r="34" fill="#FFF7ED" opacity="0.9" />
+      <circle cx="160" cy="118" r="52" fill="#FFF7ED" opacity="0.25" />
+      <path d="M0 128 Q60 88 120 118 T240 108 T320 116 V200 H0 Z" fill="#A78BFA" opacity="0.55" />
+      <path d="M0 138 Q80 108 160 132 T320 126 V200 H0 Z" fill="#8B5CF6" opacity="0.55" />
+      <rect y="140" width="320" height="60" fill="url(#calm-lake)" />
+      <ellipse cx="160" cy="150" rx="30" ry="3" fill="#FFF7ED" opacity="0.6" />
+      <ellipse cx="160" cy="160" rx="20" ry="2" fill="#FFF7ED" opacity="0.4" />
+      <ellipse cx="160" cy="169" rx="11" ry="1.5" fill="#FFF7ED" opacity="0.3" />
+      <path d="M58 58 q6 -5 12 0 q6 -5 12 0 M228 44 q5 -4 10 0 q5 -4 10 0" stroke="#6D28D9" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.5" />
+    </svg>
+  );
+}
+
 function BreathingCard() {
   const [active, setActive] = useState(false);
   const [phase, setPhase] = useState('Breathe in');
@@ -512,6 +612,7 @@ function BreathingCard() {
       setSecondsLeft((s) => {
         if (s <= 1) {
           setActive(false);
+          playTing();
           return 30;
         }
         return s - 1;
@@ -523,29 +624,38 @@ function BreathingCard() {
     };
   }, [active]);
 
+  if (active) {
+    return (
+      <div className="journal-card relative overflow-hidden !p-0 text-center animate-popIn">
+        <div className="relative h-60">
+          <PeacefulScene />
+          <div className="relative flex h-full flex-col items-center justify-center gap-2">
+            <div className="w-20 h-20 rounded-full bg-amber-100/40 border-2 border-amber-100/80 backdrop-blur-sm shadow-lg animate-breathe" />
+            <p className="mt-3 font-display text-lg font-semibold text-white drop-shadow">{phase}…</p>
+            <p className="text-xs font-mono text-white/90 drop-shadow">{secondsLeft}s left</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="journal-card text-center">
       <p className="section-label mb-3">30-second breathing</p>
       <div className="flex flex-col items-center gap-3 py-2">
-        <div className={`w-20 h-20 rounded-full bg-slate-light border-2 border-slate ${active ? 'animate-breathe' : ''}`} />
-        {active ? (
-          <>
-            <p className="text-sm font-medium text-slate-dark">{phase}…</p>
-            <p className="text-xs text-inkSoft font-mono">{secondsLeft}s left</p>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setSecondsLeft(30);
-              setPhase('Breathe in');
-              setActive(true);
-            }}
-            className="btn-pop px-5 py-2 text-sm"
-          >
-            Start
-          </button>
-        )}
+        <div className="w-20 h-20 rounded-full bg-slate-light border-2 border-slate" />
+        <button
+          type="button"
+          onClick={() => {
+            playTing();
+            setSecondsLeft(30);
+            setPhase('Breathe in');
+            setActive(true);
+          }}
+          className="btn-pop px-5 py-2 text-sm"
+        >
+          Start
+        </button>
       </div>
     </div>
   );

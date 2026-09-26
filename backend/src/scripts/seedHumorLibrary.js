@@ -75,7 +75,7 @@ Respond ONLY with a JSON array of ${bucket.count} strings.`;
 
 async function seedOne(pool, motherTongue, bucket, rawWorryText) {
   const classification = await cleanAndExtractSlots(rawWorryText, bucket.category);
-  // Mechanism (escalation/duo_banter/wordplay/deadpan) is a Tamil-only
+  // Mechanism (escalation/duo_banter/wordplay/deadpan/kadi) is a Tamil-only
   // concept - other languages pick their comedic voice from
   // LOCAL_LANGUAGE_STYLES instead, same as the live request path
   // (routes/entries.js: mechanism is null for anything but Tamil).

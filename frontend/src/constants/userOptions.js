@@ -14,6 +14,17 @@ export const MOTHER_TONGUES = [
   { value: 'other', label: 'Other / English' },
 ];
 
+// Stored as `humor_style` interests (item name = value); the joke writer
+// reads them to lean toward these styles. See freshHumorWriter.js.
+export const HUMOR_STYLES = [
+  { value: 'Silly', emoji: '😂' },
+  { value: 'Sarcastic', emoji: '😏' },
+  { value: 'Clever', emoji: '🤓' },
+  { value: 'Dad jokes', emoji: '🤣' },
+  { value: 'Roast', emoji: '🌶️' },
+  { value: 'Tamil-style', emoji: '🎭' },
+];
+
 export const FAVORITE_CATEGORIES = [
   { key: 'musician', label: 'Favorite musician', placeholder: 'e.g. A.R. Rahman' },
   { key: 'comedian', label: 'Favorite comedian', placeholder: 'e.g. Vadivelu' },

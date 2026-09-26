@@ -12,12 +12,15 @@ export function setAuthHooks(hooks) {
 }
 
 let refreshPromise = null;
+// Refresh tokens rotate server-side on every use (see backend /auth/refresh),
+// so a successful refresh returns a NEW refresh token too, not just a new
+// access token - callers must persist both or the next refresh will fail.
 async function refreshAccessToken() {
   const refreshToken = authHooks.getRefreshToken();
   if (!refreshToken) return null;
   if (!refreshPromise) {
     refreshPromise = rawRequest('/auth/refresh', { method: 'POST', body: { refreshToken } })
-      .then((r) => (r.ok ? r.data.accessToken : null))
+      .then((r) => (r.ok ? r.data : null))
       .finally(() => {
         refreshPromise = null;
       });
@@ -44,10 +47,10 @@ async function request(path, opts = {}) {
   let { ok, status, data } = await rawRequest(path, opts);
 
   if (!ok && status === 401 && opts.token) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      authHooks.onRefreshed(newToken);
-      ({ ok, status, data } = await rawRequest(path, { ...opts, token: newToken }));
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      authHooks.onRefreshed(refreshed);
+      ({ ok, status, data } = await rawRequest(path, { ...opts, token: refreshed.accessToken }));
     } else {
       authHooks.onRefreshFailed();
     }

@@ -1,17 +1,46 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import PasswordInput from '../components/PasswordInput.jsx';
+
+// Only the email is ours to remember (not sensitive). The actual password
+// is left to the browser's own password manager - see the autoComplete
+// attributes below, which are what trigger its native "Save password?"
+// prompt. Never store a raw password in localStorage: unlike the browser's
+// encrypted, permission-gated credential store, localStorage is plain text
+// readable by any script on the page, so a single XSS bug would leak every
+// saved password instantly.
+const REMEMBERED_EMAIL_KEY = 'relol_remembered_email';
 
 export default function Login() {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    try {
+      return localStorage.getItem(REMEMBERED_EMAIL_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState('');
+  const [rememberEmail, setRememberEmail] = useState(() => {
+    try {
+      return !!localStorage.getItem(REMEMBERED_EMAIL_KEY);
+    } catch {
+      return true;
+    }
+  });
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
       await login({ email, password });
+      try {
+        if (rememberEmail) localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+        else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+      } catch {
+        // localStorage unavailable (private browsing, quota) - not worth failing login over
+      }
       navigate('/');
     } catch {
       // error already surfaced via context
@@ -28,11 +57,14 @@ export default function Login() {
         <p className="text-sm text-inkSoft mt-1">Your daily mood booster is waiting.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
         <div>
-          <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Email</label>
+          <label htmlFor="login-email" className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Email</label>
           <input
+            id="login-email"
+            name="email"
             type="email"
+            autoComplete="username"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -42,13 +74,15 @@ export default function Login() {
         </div>
         <div>
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Password</label>
+            <label htmlFor="login-password" className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Password</label>
             <Link to="/forgot-password" className="text-xs font-semibold text-blue-dark">
               Forgot password?
             </Link>
           </div>
-          <input
-            type="password"
+          <PasswordInput
+            id="login-password"
+            name="password"
+            autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -56,6 +90,16 @@ export default function Login() {
             placeholder="••••••••"
           />
         </div>
+
+        <label className="flex items-center gap-2 text-sm text-inkSoft select-none">
+          <input
+            type="checkbox"
+            checked={rememberEmail}
+            onChange={(e) => setRememberEmail(e.target.checked)}
+            className="rounded border-lavender"
+          />
+          Remember my email on this device
+        </label>
 
         {error && <p className="text-sm text-danger-dark font-medium">{error}</p>}
 

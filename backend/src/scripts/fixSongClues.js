@@ -1,13 +1,17 @@
 // One-off fix: regenerates emoji_clue for every existing song_riddles row
-// using the corrected charades/literal-title-translation approach (see
-// seedSongs.js) instead of the old vague mood-board style. Song/movie/singer
+// using the shared, context-aware clue writer (see ../services/songClueWriter.js)
+// instead of the old pure literal-word-translation approach, which collapsed
+// into generic filler for abstract/philosophical titles. Song/movie/singer
 // metadata is left untouched - only the clue changes. Run once: node src/scripts/fixSongClues.js
 require('dotenv').config();
 
 const { getPool } = require('../config/db');
-const { callClaude } = require('../services/anthropicClient');
+const { writeCluesForBatch } = require('../services/songClueWriter');
 
-const BATCH_SIZE = 20;
+// Smaller than before (was 20) - the richer prompt produces longer per-song
+// reasoning/output, and Groq (now the working fallback since Anthropic is
+// out of credit) truncates large batches mid-JSON more easily than Claude did.
+const BATCH_SIZE = 8;
 
 function chunk(arr, size) {
   const out = [];
@@ -15,20 +19,8 @@ function chunk(arr, size) {
   return out;
 }
 
-async function fixBatch(rows) {
-  const list = rows.map((r, i) => `${i}. "${r.song_name}" (${r.movie_name || 'unknown film'})`).join('\n');
-  const system = `For each Tamil film song below, write a 4-emoji CHARADES clue. Translate the literal key words/nouns in the song's TITLE into emoji first (e.g. a title meaning "will the flower-breeze return" -> flower + wind + a return/turn-back symbol). Only use the song's mood or scene to fill remaining slots if the title itself doesn't give enough literal words to translate. The clue must be solvable by someone who knows what the title means, not a vague mood board.
-
-${list}
-
-Respond ONLY with a JSON array, same order, one per song: [{"index":0,"emojiClue":"🌸🌬️🐦↩️"}]`;
-  const raw = await callClaude({
-    system, messages: [{ role: 'user', content: 'Write them now.' }], maxTokens: 60 * rows.length, temperature: 0.7,
-  });
-  const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-  const start = cleaned.indexOf('[');
-  const end = cleaned.lastIndexOf(']');
-  return JSON.parse(start !== -1 ? cleaned.slice(start, end + 1) : cleaned);
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function main() {
@@ -37,17 +29,33 @@ async function main() {
   console.log(`Fixing clues for ${rows.length} songs...`);
 
   let total = 0;
-  for (const batch of chunk(rows, BATCH_SIZE)) {
-    const fixed = await fixBatch(batch);
-    for (const item of fixed) {
-      const row = batch[item.index];
-      if (!row || !item.emojiClue) continue;
-      await pool.query('UPDATE song_riddles SET emoji_clue = $1 WHERE id = $2', [item.emojiClue, row.id]);
-      total += 1;
+  const failedBatches = [];
+  const batches = chunk(rows, BATCH_SIZE);
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
+    // Anthropic is out of credit right now, so every batch falls through to
+    // Groq's free tier, which caps at 8000 tokens/minute - pace requests so
+    // a full run doesn't blow through that and lose the back half to 429s.
+    if (i > 0) await sleep(12000);
+    try {
+      const fixed = await writeCluesForBatch(batch);
+      for (const item of fixed) {
+        const row = batch[item.index];
+        if (!row || !item.emojiClue) continue;
+        await pool.query('UPDATE song_riddles SET emoji_clue = $1 WHERE id = $2', [item.emojiClue, row.id]);
+        total += 1;
+      }
+      process.stdout.write('.');
+    } catch (err) {
+      process.stdout.write('x');
+      console.error(`\nbatch starting with "${batch[0].song_name}" failed:`, err.message);
+      failedBatches.push(batch);
     }
-    process.stdout.write(`.`);
   }
   console.log(`\nDone. Fixed ${total}/${rows.length} clues.`);
+  if (failedBatches.length) {
+    console.log(`${failedBatches.length} batch(es) failed and kept their previous clue - rerun the script to retry just those (it re-selects all active rows each time).`);
+  }
 
   // Same-title songs from different films (e.g. multiple "Thillana Thillana"
   // dance numbers) can get an identical, non-distinguishing clue when a batch

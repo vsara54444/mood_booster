@@ -40,6 +40,7 @@ export default function ForgotPassword() {
             <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Email</label>
             <input
               type="email"
+              autoComplete="username"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}

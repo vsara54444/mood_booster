@@ -34,7 +34,7 @@ export default {
       },
       fontFamily: {
         display: [
-          'Inter',
+          '"Baloo 2"',
           '"Noto Sans Tamil"',
           '"Noto Sans Telugu"',
           '"Noto Sans Kannada"',
@@ -78,12 +78,31 @@ export default {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.35)' },
         },
+        float: {
+          '0%, 100%': { transform: 'translateY(0) rotate(var(--float-rot, 0deg))' },
+          '50%': { transform: 'translateY(-10px) rotate(var(--float-rot, 0deg))' },
+        },
+        // Cat leaning in from the screen edge and back out a little.
+        peek: {
+          '0%, 100%': { transform: 'translateX(-55%) rotate(32deg)' },
+          '50%': { transform: 'translateX(-38%) rotate(22deg)' },
+        },
+        // Wandering 2D drift with a little wobble, for the emoji stickers.
+        drift: {
+          '0%, 100%': { transform: 'translate(0, 0) rotate(var(--drift-rot, 0deg)) scale(1)' },
+          '25%': { transform: 'translate(var(--drift-x), calc(var(--drift-y) * 0.4)) rotate(calc(var(--drift-rot, 0deg) + 6deg)) scale(1.04)' },
+          '50%': { transform: 'translate(calc(var(--drift-x) * 0.3), var(--drift-y)) rotate(var(--drift-rot, 0deg)) scale(1)' },
+          '75%': { transform: 'translate(calc(var(--drift-x) * -0.5), calc(var(--drift-y) * 0.5)) rotate(calc(var(--drift-rot, 0deg) - 6deg)) scale(0.97)' },
+        },
       },
       animation: {
         popIn: 'popIn 0.25s ease-out',
         bounceTap: 'bounceTap 0.15s ease-in-out',
         wiggle: 'wiggle 4s ease-in-out infinite',
         breathe: 'breathe 4s ease-in-out infinite',
+        float: 'float 5s ease-in-out infinite',
+        drift: 'drift 8s ease-in-out infinite',
+        peek: 'peek 4.5s ease-in-out infinite',
       },
     },
   },

@@ -21,7 +21,11 @@ export default function App() {
   const showNav = accessToken && !['/login', '/signup', '/forgot-password', '/reset-password'].includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-paper">
+    // On phones the app fills the screen; on wider browsers it stays a
+    // phone-width column centered on a neutral backdrop, so every page keeps
+    // the same mobile layout (Android / iPhone) everywhere.
+    <div className="min-h-screen bg-slate-200">
+      <div className="relative mx-auto min-h-screen max-w-md bg-paper overflow-x-hidden md:shadow-2xl">
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -65,6 +69,7 @@ export default function App() {
       </Routes>
 
       {showNav && <BottomNav />}
+      </div>
     </div>
   );
 }

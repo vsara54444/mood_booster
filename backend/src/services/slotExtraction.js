@@ -1,9 +1,8 @@
-const { callClaude } = require('./anthropicClient');
+const { availableProviders } = require('./providers');
 const { parseJsonResponse } = require('./jsonUtils');
 const { CATEGORY_LABELS } = require('./humorStyles');
 
 const SLOT_NAMES = ['subject', 'object', 'event', 'detail'];
-const ATTEMPTS = 2;
 
 // Fixed taxonomy so subcategory reliably groups worries for the humor
 // library's DB filter (humorRepository.js) instead of fragmenting into
@@ -33,10 +32,19 @@ Also extract, in ENGLISH, up to four short slot values (2-5 words each) pulled d
 Never invent a slot value that isn't actually in the story - use null instead.
 Respond ONLY with JSON: {"cleanedText": "...", "topicTag": "...", "subcategory": "...", "emotion": "...", "topicKeywords": ["...", "..."], "slots": {"subject": "..."|null, "object": "..."|null, "event": "..."|null, "detail": "..."|null}}`;
 
+  const providers = availableProviders();
+  if (!providers.length) {
+    throw new Error('No AI providers configured (check API keys in backend/.env).');
+  }
+
+  // Try each configured provider in turn instead of hardcoding Claude, so a
+  // single provider being down (e.g. out of credit) doesn't take the whole
+  // "today's entry" flow down with it - see freshHumorWriter.js for the same
+  // pattern on the joke-writing side.
   let lastErr;
-  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+  for (const provider of providers) {
     try {
-      const raw = await callClaude({
+      const raw = await provider.call({
         system,
         messages: [{ role: 'user', content: `Category: ${CATEGORY_LABELS[category] || category}\nEntry: ${rawText}` }],
         maxTokens: 350,
@@ -62,7 +70,7 @@ Respond ONLY with JSON: {"cleanedText": "...", "topicTag": "...", "subcategory":
       };
     } catch (err) {
       lastErr = err;
-      console.error(`[slotExtraction] attempt ${attempt} failed:`, err.message);
+      console.error(`[slotExtraction] provider ${provider.key} failed:`, err.message);
     }
   }
   throw lastErr;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -61,8 +62,9 @@ export default function ResetPassword() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">New password</label>
-            <input
-              type="password"
+            <PasswordInput
+              id="reset-password"
+              autoComplete="new-password"
               required
               minLength={8}
               value={password}
@@ -73,8 +75,9 @@ export default function ResetPassword() {
           </div>
           <div>
             <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Confirm password</label>
-            <input
-              type="password"
+            <PasswordInput
+              id="reset-confirm-password"
+              autoComplete="new-password"
               required
               minLength={8}
               value={confirmPassword}

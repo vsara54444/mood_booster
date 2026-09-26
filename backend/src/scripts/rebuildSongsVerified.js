@@ -6,7 +6,7 @@
 require('dotenv').config();
 
 const { getPool } = require('../config/db');
-const { callClaude } = require('../services/anthropicClient');
+const { writeCluesForBatch } = require('../services/songClueWriter');
 
 // [songName, movieName, singer, era] - each verified against a Wikipedia
 // soundtrack/film page during this session.
@@ -67,12 +67,10 @@ const VERIFIED_SONGS = [
   ['Kannamoochi Yenada', 'Kandukondain Kandukondain', 'K. S. Chithra, Shahana', '90s_2000s'],
 ];
 
-async function generateClue(songName) {
-  const system = `Write a 4-emoji CHARADES clue for the Tamil film song titled "${songName}". Translate the literal key words/nouns in the TITLE into emoji first. Only use mood/scene emoji to fill remaining slots if the title itself doesn't give enough literal words.
-Respond ONLY with JSON: {"emojiClue":"🌸🌬️🐦↩️"}`;
-  const raw = await callClaude({ system, messages: [{ role: 'user', content: 'Write it now.' }], maxTokens: 60, temperature: 0.7 });
-  const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-  return JSON.parse(cleaned).emojiClue;
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 async function main() {
@@ -81,18 +79,23 @@ async function main() {
   console.log('Deactivated all previous (unverified) rows.');
 
   let total = 0;
-  for (const [songName, movieName, singer, era] of VERIFIED_SONGS) {
+  for (const batch of chunk(VERIFIED_SONGS, 20)) {
+    const rows = batch.map(([songName, movieName]) => ({ song_name: songName, movie_name: movieName }));
     try {
-      const emojiClue = await generateClue(songName);
-      await pool.query(
-        'INSERT INTO song_riddles (era, emoji_clue, song_name, movie_name, singer) VALUES ($1, $2, $3, $4, $5)',
-        [era, emojiClue, songName, movieName, singer]
-      );
-      total += 1;
+      const fixed = await writeCluesForBatch(rows);
+      for (const item of fixed) {
+        const [songName, movieName, singer, era] = batch[item.index];
+        if (!item.emojiClue) continue;
+        await pool.query(
+          'INSERT INTO song_riddles (era, emoji_clue, song_name, movie_name, singer) VALUES ($1, $2, $3, $4, $5)',
+          [era, item.emojiClue, songName, movieName, singer]
+        );
+        total += 1;
+      }
       process.stdout.write('.');
     } catch (err) {
       process.stdout.write('x');
-      console.error(`\nfailed for "${songName}":`, err.message);
+      console.error(`\nfailed for batch starting with "${batch[0][0]}":`, err.message);
     }
   }
   console.log(`\nDone. Inserted ${total}/${VERIFIED_SONGS.length} verified songs.`);

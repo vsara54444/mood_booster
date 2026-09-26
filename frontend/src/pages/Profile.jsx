@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import TopBar from '../components/TopBar.jsx';
+import ProfileBackground from '../components/ProfileBackground.jsx';
 import Toggle from '../components/Toggle.jsx';
 import LoadingDots from '../components/LoadingDots.jsx';
 import ChipListInput from '../components/ChipListInput.jsx';
-import { USER_TYPES, MOTHER_TONGUES, FAVORITE_CATEGORIES } from '../constants/userOptions.js';
+import { USER_TYPES, MOTHER_TONGUES, FAVORITE_CATEGORIES, HUMOR_STYLES } from '../constants/userOptions.js';
 
 export default function Profile() {
   const { accessToken, logout } = useAuth();
@@ -31,6 +32,7 @@ export default function Profile() {
         for (const c of FAVORITE_CATEGORIES) {
           flat[c.key] = (interestsData.interests[c.key] || []).map((it) => it.itemName);
         }
+        flat.humor_style = (interestsData.interests.humor_style || []).map((it) => it.itemName);
         setFavorites(flat);
       } catch (err) {
         console.error(err);
@@ -90,18 +92,28 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto pb-28">
-        <TopBar title="Profile" subtitle="Just for you - private by default" />
+      <div className="profile-page relative min-h-screen overflow-hidden bg-gradient-to-b from-sky-200 via-sky-100 to-sky-50 pb-28">
+        <ProfileBackground />
+        <TopBar
+          className="bg-sky-200/85 border-sky-300/60 shadow-sm"
+          title={<span className="text-sky-900">Profile</span>}
+          subtitle={<span className="font-semibold text-sky-800/80">Just for you - private by default</span>}
+        />
         <LoadingDots label="Loading your profile" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto pb-28">
-      <TopBar title="Profile" subtitle="Just for you - private by default" />
+    <div className="profile-page relative min-h-screen overflow-hidden bg-gradient-to-b from-sky-200 via-sky-100 to-sky-50 pb-28">
+      <ProfileBackground />
+      <TopBar
+        className="bg-sky-200/85 border-sky-300/60 shadow-sm"
+        title={<span className="text-sky-900">Profile</span>}
+        subtitle={<span className="font-semibold text-sky-800/80">Just for you - private by default</span>}
+      />
 
-      <main className="px-5 pt-6 space-y-6">
+      <main className="relative px-5 pt-6 space-y-6">
         <div className="journal-card">
           <p className="section-label mb-3">About you</p>
           <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Display name</label>
@@ -144,6 +156,30 @@ export default function Profile() {
           <p className="text-[11px] text-inkSoft mt-1">
             Pick language to get your humor reframe.
           </p>
+        </div>
+
+        <div className="journal-card">
+          <p className="section-label">What kind of humor do you like?</p>
+          <p className="text-[11px] text-inkSoft mt-0.5 mb-3">Pick as many as you like - your jokes will lean this way.</p>
+          <div className="flex flex-wrap gap-2">
+            {HUMOR_STYLES.map((h) => {
+              const picked = (favorites.humor_style || []).includes(h.value);
+              return (
+                <button
+                  key={h.value}
+                  type="button"
+                  aria-pressed={picked}
+                  onClick={() => {
+                    const current = favorites.humor_style || [];
+                    saveFavorite('humor_style', picked ? current.filter((v) => v !== h.value) : [...current, h.value]);
+                  }}
+                  className={picked ? 'chip-active' : 'chip-inactive'}
+                >
+                  {h.emoji} {h.value}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="journal-card !p-4 space-y-4">

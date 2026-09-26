@@ -33,7 +33,10 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     setAuthHooks({
       getRefreshToken: () => refreshTokenRef.current,
-      onRefreshed: (newAccessToken) => setAccessToken(newAccessToken),
+      onRefreshed: ({ accessToken: newAccessToken, refreshToken: newRefreshToken }) => {
+        setAccessToken(newAccessToken);
+        setRefreshToken(newRefreshToken);
+      },
       onRefreshFailed: () => logout(),
     });
   }, []);
