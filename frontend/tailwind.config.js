@@ -52,6 +52,7 @@ export default {
           'sans-serif',
         ],
         mono: ['"Space Mono"', 'monospace'],
+        fun: ['Fredoka', '"Baloo 2"', 'sans-serif'],
       },
       borderRadius: {
         card: '14px',

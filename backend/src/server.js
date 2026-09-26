@@ -13,6 +13,7 @@ const puzzlesRoutes = require('./routes/puzzles');
 const songsRoutes = require('./routes/songs');
 const quotesRoutes = require('./routes/quotes');
 const tinyWinsRoutes = require('./routes/tinyWins');
+const moodChecksRoutes = require('./routes/moodChecks');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/puzzles', puzzlesRoutes);
 app.use('/api/songs', songsRoutes);
 app.use('/api/quotes', quotesRoutes);
 app.use('/api/tiny-wins', tinyWinsRoutes);
+app.use('/api/mood-checks', moodChecksRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Not found.' }));
 app.use((err, req, res, next) => {

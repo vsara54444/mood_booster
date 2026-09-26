@@ -100,5 +100,7 @@ export const api = {
     request(`/quotes/random${excludeId ? `?exclude=${excludeId}` : ''}`, { token }),
 
   logTinyWin: (token, winType) => request('/tiny-wins', { method: 'POST', body: { winType }, token }),
+  logMoodCheck: (token, feelingBetter, emotion) =>
+    request('/mood-checks', { method: 'POST', body: { feelingBetter, emotion }, token }),
   getTinyWinsSummary: (token) => request('/tiny-wins/summary', { token }),
 };

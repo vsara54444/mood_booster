@@ -124,7 +124,7 @@ export default function MoodBoost() {
                 {(c) => <p className="text-sm text-ink leading-relaxed">{c}</p>}
               </ShuffleCard>
 
-              <MoodCheck />
+              <MoodCheck emotion={emotion.key} />
 
               <button
                 type="button"
@@ -661,8 +661,15 @@ function BreathingCard() {
   );
 }
 
-function MoodCheck() {
+function MoodCheck({ emotion }) {
+  const { accessToken } = useAuth();
   const [answer, setAnswer] = useState(null);
+
+  function choose(value) {
+    setAnswer(value);
+    // Recorded in mood_checks; a failed save shouldn't interrupt the user.
+    api.logMoodCheck(accessToken, value === 'yes', emotion).catch((err) => console.error(err));
+  }
 
   return (
     <div className="journal-card text-center">
@@ -675,10 +682,10 @@ function MoodCheck() {
         </p>
       ) : (
         <div className="flex gap-3 justify-center">
-          <button type="button" onClick={() => setAnswer('yes')} className="btn-pop px-5 py-2 text-sm">
+          <button type="button" onClick={() => choose('yes')} className="btn-pop px-5 py-2 text-sm">
             Yes 🎉
           </button>
-          <button type="button" onClick={() => setAnswer('no')} className="chip-inactive">
+          <button type="button" onClick={() => choose('no')} className="chip-inactive">
             Not yet
           </button>
         </div>

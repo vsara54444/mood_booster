@@ -12,8 +12,8 @@ export default function ResultCard({
   return (
     <div className="journal-card animate-popIn space-y-4">
       <div>
-        <span className="section-label">
-          Humor reframe
+        <span className="section-label font-fun !font-bold !text-xl tracking-normal">
+          <span aria-hidden="true">🎉</span> Today’s Fun Break
         </span>
         <p className="font-display text-xl font-semibold text-ink mt-1 leading-snug">
           {result.humor}
@@ -62,15 +62,15 @@ export default function ResultCard({
       <div className="h-px bg-lavender-light" />
 
       <div>
-        <span className="section-label">
-          Perspective
+        <span className="section-label font-fun !font-bold !text-xl tracking-normal">
+          <span aria-hidden="true">💡</span> Perspective
         </span>
         <p className="text-sm text-ink mt-1 leading-relaxed">{result.perspective}</p>
       </div>
 
       <div>
-        <span className="section-label">
-          Try this
+        <span className="section-label font-fun !font-bold !text-xl tracking-normal">
+          <span aria-hidden="true">🎯</span> Try this
         </span>
         <p className="text-sm text-ink mt-1 leading-relaxed">{result.action}</p>
       </div>

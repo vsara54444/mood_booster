@@ -169,6 +169,18 @@ export default function Home() {
   const activeCategory = showForm ? category : (todayEntry?.category || category);
   const theme = CATEGORY_THEME[activeCategory] || DEFAULT_CATEGORY_THEME;
 
+  // Cat peeking in from the left screen edge (-20px cancels the page's side
+  // padding; the rest of its body is clipped off-screen) plus the sunglasses
+  // sticker - placed just below whichever button ends the current view.
+  const bottomDecor = (
+    <>
+      <div className="pointer-events-none absolute top-full mt-3 -left-5 w-28 overflow-visible">
+        <CatDecor className="w-28 -translate-x-[45%] rotate-[28deg] animate-peek motion-reduce:animate-none" />
+      </div>
+      <FloatingSticker s={COOL_STICKER} />
+    </>
+  );
+
   return (
     <div className={`relative min-h-screen overflow-hidden bg-gradient-to-b ${theme.bg} transition-colors duration-700`}>
       <CloudDecor className="pointer-events-none absolute top-2 left-[-10%] w-40 opacity-70" />
@@ -208,6 +220,23 @@ export default function Home() {
 
       {EMOJI_STICKERS.map((s, i) => (
         <FloatingSticker key={`emoji-${i}`} s={s} />
+      ))}
+
+      {/* Small floating quote tags near the bottom, same loose style as
+          "Good Vibes Only" below. */}
+      {[
+        { text: 'Laugh it off', bottom: '176px', left: '27%', rot: '6deg', delay: '0.6s' },
+        { text: "You've got this", bottom: '104px', right: '26%', rot: '-5deg', delay: '1.8s' },
+        { text: 'Stay awesome', bottom: '84px', left: '30%', rot: '4deg', delay: '1.1s' },
+      ].map((q) => (
+        <div
+          key={q.text}
+          className="pointer-events-none absolute flex items-center gap-1 whitespace-nowrap text-[10px] font-bold text-ink/40 animate-float motion-reduce:animate-none"
+          style={{ bottom: q.bottom, left: q.left, right: q.right, '--float-rot': q.rot, animationDelay: q.delay }}
+        >
+          <span>{q.text}</span>
+          <HeartDecor className="w-3 shrink-0" />
+        </div>
       ))}
 
       {/* "Good Vibes Only" - a loose floating sticker tag, not aligned text
@@ -276,6 +305,7 @@ export default function Home() {
                   Do another attempt ({remaining} left)
                 </button>
               )}
+              <div className="relative !mt-0">{bottomDecor}</div>
             </>
           ) : (
             <>
@@ -317,13 +347,7 @@ export default function Home() {
                   >
                     {submitting ? 'Working on it…' : 'Get my boost'}
                   </button>
-                  {/* Cat peeks in from the left screen edge (-20px cancels the
-                      page's side padding; the rest of its body is clipped
-                      off-screen) just below the button. */}
-                  <div className="pointer-events-none absolute top-full mt-3 -left-5 w-28 overflow-visible">
-                    <CatDecor className="w-28 -translate-x-[45%] rotate-[28deg] animate-peek motion-reduce:animate-none" />
-                  </div>
-                  <FloatingSticker s={COOL_STICKER} />
+                  {bottomDecor}
                 </div>
               </div>
 

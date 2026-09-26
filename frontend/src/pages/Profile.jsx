@@ -115,7 +115,7 @@ export default function Profile() {
 
       <main className="relative px-5 pt-6 space-y-6">
         <div className="journal-card">
-          <p className="section-label mb-3">About you</p>
+          <p className="section-label font-fun !font-bold !text-xl tracking-normal mb-3">About you</p>
           <label className="text-xs font-semibold text-inkSoft uppercase tracking-wide">Display name</label>
           <input
             value={user.display_name || ''}
@@ -127,7 +127,7 @@ export default function Profile() {
         </div>
 
         <div className="journal-card !p-4">
-          <p className="section-label mb-2">You're mostly...</p>
+          <p className="section-label font-fun !font-bold !text-xl tracking-normal mb-2">You're mostly...</p>
           <div className="flex flex-wrap gap-2">
             {USER_TYPES.map((t) => (
               <button
@@ -143,7 +143,7 @@ export default function Profile() {
         </div>
 
         <div className="journal-card !p-4">
-          <p className="section-label mb-2">Mother tongue</p>
+          <p className="section-label font-fun !font-bold !text-xl tracking-normal mb-2">Mother tongue</p>
           <select
             value={user.mother_tongue || 'other'}
             onChange={(e) => save({ mother_tongue: e.target.value })}
@@ -159,7 +159,7 @@ export default function Profile() {
         </div>
 
         <div className="journal-card">
-          <p className="section-label">What kind of humor do you like?</p>
+          <p className="section-label font-fun !font-bold !text-xl tracking-normal">What kind of humor do you like?</p>
           <p className="text-[11px] text-inkSoft mt-0.5 mb-3">Pick as many as you like - your jokes will lean this way.</p>
           <div className="flex flex-wrap gap-2">
             {HUMOR_STYLES.map((h) => {
@@ -184,7 +184,7 @@ export default function Profile() {
 
         <div className="journal-card !p-4 space-y-4">
           <div>
-            <p className="section-label">Your favorites</p>
+            <p className="section-label font-fun !font-bold !text-xl tracking-normal">Your favorites</p>
             <p className="text-[11px] text-inkSoft mt-0.5">
               We'll weave these into your humor and song picks when they genuinely fit - never forced.
             </p>
@@ -204,7 +204,7 @@ export default function Profile() {
         </div>
 
         <div className="journal-card">
-          <p className="section-label mb-1">3-Minute Mood Booster reminders</p>
+          <p className="section-label font-fun !font-bold !text-xl tracking-normal mb-1">3-Minute Mood Booster reminders</p>
           <Toggle
             checked={!!user.notifications_on}
             onChange={(v) => save({ notifications_on: v })}
@@ -214,7 +214,7 @@ export default function Profile() {
         </div>
 
         <div className="journal-card">
-          <p className="section-label mb-1">Privacy</p>
+          <p className="section-label font-fun !font-bold !text-xl tracking-normal mb-1">Privacy</p>
           <Toggle
             checked={!!user.share_default}
             onChange={(v) => save({ share_default: v })}

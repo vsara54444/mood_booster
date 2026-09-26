@@ -79,7 +79,7 @@ export default function StorySoFar() {
   // focus" - the one just tapped, or otherwise the most recently logged one
   // on record, so the page still feels personalized on a fresh page load
   // and not just for the few seconds right after tapping a button.
-  const activeWinType = justLogged || tinyWinSummary?.recent?.[0]?.win_type || null;
+  const activeWinType = justLogged || tinyWinSummary?.recent?.[0]?.win_type || 'break'; // default before any win is logged
   const storyTheme = TINY_WIN_THEME[activeWinType] || DEFAULT_STORY_THEME;
 
   if (loading) {
@@ -153,7 +153,7 @@ export default function StorySoFar() {
 
           {/* Your Mood Journey */}
           <div className="journal-card">
-            <p className="section-label mb-3">Your Mood Journey</p>
+            <p className="section-label font-fun !font-bold !text-xl tracking-normal mb-3">Your Mood Journey</p>
 
             <div className="flex justify-between gap-1 mb-4">
               {last7Days.map((d, i) => {
@@ -185,7 +185,7 @@ export default function StorySoFar() {
           {/* Weekly / Monthly toggle report */}
           <div className="journal-card">
             <div className="flex items-center justify-between mb-3">
-              <p className="section-label">{view === 'weekly' ? 'Weekly summary' : 'Monthly growth report'}</p>
+              <p className="section-label font-fun !font-bold !text-xl tracking-normal">{view === 'weekly' ? 'Weekly summary' : 'Monthly growth report'}</p>
               <div className="flex gap-1 bg-paperDim rounded-full p-1">
                 {['weekly', 'monthly'].map((v) => (
                   <button
@@ -255,18 +255,73 @@ function EmptyState({ text }) {
   return <p className="text-sm text-inkSoft text-center py-4">{text}</p>;
 }
 
+// Coffee cup for "Took a break", with wisps of steam rising and fading.
+function CoffeeCup({ className }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+      <style>{`
+        .coffee-steam { animation: coffee-steam 2.4s ease-in-out infinite; opacity: 0; }
+        @keyframes coffee-steam {
+          0% { transform: translateY(3px); opacity: 0; }
+          30% { opacity: .75; }
+          100% { transform: translateY(-5px); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) { .coffee-steam { animation: none; opacity: .5; } }
+      `}</style>
+      {[11, 16, 21].map((x, i) => (
+        <path
+          key={x}
+          className="coffee-steam"
+          style={{ animationDelay: `${i * 0.7}s` }}
+          d={`M${x} 12 q-2 -2.5 0 -5 q2 -2.5 0 -5`}
+          stroke="#64748B"
+          strokeWidth="1.9"
+          fill="none"
+          strokeLinecap="round"
+        />
+      ))}
+      <path d="M24 16h1.5a3.5 3.5 0 0 1 0 7H23.5" stroke="#7C2D12" strokeWidth="2.6" fill="none" />
+      <path d="M6 14h18v7a7 7 0 0 1-7 7h-4a7 7 0 0 1-7-7z" fill="#C2410C" stroke="#7C2D12" strokeWidth="1.4" strokeLinejoin="round" />
+      <ellipse cx="15" cy="14" rx="9" ry="1.8" fill="#78350F" />
+      <path d="M8.5 17.5v3a4.5 4.5 0 0 0 2 3.7" stroke="#FDBA74" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.8" />
+      <ellipse cx="15" cy="29.2" rx="11" ry="1.4" fill="#9A3412" opacity="0.35" />
+    </svg>
+  );
+}
+
+// Small golden winner's cup, drawn as a sticker (light outline) so it
+// isn't an emoji.
+function TrophySticker({ className }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+      <g stroke="#FEF3C7" strokeWidth="3" strokeLinejoin="round" fill="none">
+        <path d="M9 5h14v6a7 7 0 0 1-14 0z" />
+        <path d="M9 7H5.5a3.5 3.5 0 0 0 3.5 5.5M23 7h3.5A3.5 3.5 0 0 1 23 12.5" />
+        <rect x="11" y="23" width="10" height="4" rx="1" />
+      </g>
+      <path d="M9 7H5.5a3.5 3.5 0 0 0 3.5 5.5M23 7h3.5A3.5 3.5 0 0 1 23 12.5" stroke="#D97706" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M9 5h14v6a7 7 0 0 1-14 0z" fill="#FACC15" stroke="#D97706" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M12 7.5v3a4 4 0 0 0 2 3.4" stroke="#FEF9C3" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <rect x="14.5" y="18" width="3" height="5" fill="#F59E0B" />
+      <rect x="11" y="23" width="10" height="4" rx="1" fill="#B45309" />
+      <path d="M16 8.2l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L13.1 10.3l2-.3z" fill="#FEF3C7" />
+    </svg>
+  );
+}
+
 // Deliberately pressure-free: no streak, no daily limit, no "you missed a
 // day" framing. One tap logs it and shows a quiet confirmation - the summary
 // only ever counts up, never calls out a gap. State lives in the parent
 // (StorySoFar) now, since the page's own background theme reacts to
 // whichever Tiny Win is currently "in focus" - see storyTheme there.
 function TinyWinCard({ summary, justLogged, onLog, theme }) {
-  const lastLoggedKey = justLogged || summary?.recent?.[0]?.win_type || null;
+  const lastLoggedKey = justLogged || summary?.recent?.[0]?.win_type || 'break';
 
   return (
     <div className="journal-card overflow-hidden">
       <div className="relative mb-1 flex items-center justify-between">
-        <p className="section-label flex items-center gap-1.5">
+        <p className="section-label font-fun !font-bold !text-xl tracking-normal flex items-center gap-1.5">
+          <TrophySticker className="w-4 h-4 drop-shadow-sm" />
           Tiny win
         </p>
       </div>
@@ -285,7 +340,7 @@ function TinyWinCard({ summary, justLogged, onLog, theme }) {
                 isActive ? `${optTheme.chipActive} border` : ''
               }`}
             >
-              <span className="text-lg">{opt.emoji}</span>
+              {opt.key === 'break' ? <CoffeeCup className="w-7 h-7 shrink-0" /> : <span className="text-lg">{opt.emoji}</span>}
               <span className={`text-xs font-medium leading-tight ${isActive ? optTheme.accent : ''}`}>{opt.label}</span>
             </button>
           );

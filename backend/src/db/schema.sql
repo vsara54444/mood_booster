@@ -395,6 +395,22 @@ CREATE TABLE IF NOT EXISTS tiny_wins (
 CREATE INDEX IF NOT EXISTS idx_tiny_wins_user ON tiny_wins(user_id, created_at DESC);
 
 -- =========================================================
+--  Migration: Boost page "Feeling any better?" answers, so we can
+--  see whether the Boost activities actually help. Email/name are
+--  copied onto each row for easy reading. See routes/moodChecks.js.
+-- =========================================================
+CREATE TABLE IF NOT EXISTS mood_checks (
+  id             UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID          NOT NULL REFERENCES users(user_id),
+  email          VARCHAR(255),
+  display_name   VARCHAR(100),
+  emotion        VARCHAR(20),              -- feeling picked on the Boost page
+  feeling_better BOOLEAN       NOT NULL,   -- true = "Yes", false = "Not yet"
+  created_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_mood_checks_created ON mood_checks(created_at DESC);
+
+-- =========================================================
 --  Migration: login events (audit log of successful logins,
 --  so total/unique login counts can be queried directly) and
 --  activating the previously-unused `refresh_tokens` table as
